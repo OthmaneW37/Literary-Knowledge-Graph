@@ -8,16 +8,13 @@ version = "0.1.0"
 description = "Knowledge graph companion for literary analysis"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "ebooklib",
+    "beautifulsoup4"
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.black]
-line-length = 100
-
-[tool.ruff]
-line-length = 100

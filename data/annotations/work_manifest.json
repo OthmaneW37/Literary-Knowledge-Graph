@@ -5,7 +5,8 @@
     "author": "Franz Kafka",
     "source": "Project Gutenberg",
     "source_url": "https://www.gutenberg.org/ebooks/5200",
-    "language": "en"
+    "language": "en",
+    "raw_filename": "metamorphosis.epub"
   },
   {
     "work_id": "the_trial",
@@ -13,6 +14,7 @@
     "author": "Franz Kafka",
     "source": "Project Gutenberg",
     "source_url": "https://www.gutenberg.org/ebooks/7849",
-    "language": "en"
+    "language": "en",
+    "raw_filename": "the_trial.epub"
   }
 ]
