@@ -1,0 +1,27 @@
+[
+  {
+    "id": "q01",
+    "question": "Comment l'isolement de Gregor évolue-t-il dans Metamorphosis ?",
+    "expected_work": "metamorphosis"
+  },
+  {
+    "id": "q02",
+    "question": "Quels personnages exercent une autorité sur Josef K. ?",
+    "expected_work": "the_trial"
+  },
+  {
+    "id": "q03",
+    "question": "Quels thèmes relient les deux romans ?",
+    "expected_works": ["metamorphosis", "the_trial"]
+  },
+  {
+    "id": "q04",
+    "question": "Quel rôle la famille joue-t-elle dans Metamorphosis ?",
+    "expected_work": "metamorphosis"
+  },
+  {
+    "id": "q05",
+    "question": "Comment la bureaucratie influence-t-elle The Trial ?",
+    "expected_work": "the_trial"
+  }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "work_id": "metamorphosis",
+    "title": "Metamorphosis",
+    "author": "Franz Kafka",
+    "source": "Project Gutenberg",
+    "source_url": "https://www.gutenberg.org/ebooks/5200",
+    "language": "en"
+  },
+  {
+    "work_id": "the_trial",
+    "title": "The Trial",
+    "author": "Franz Kafka",
+    "source": "Project Gutenberg",
+    "source_url": "https://www.gutenberg.org/ebooks/7849",
+    "language": "en"
+  }
+]
