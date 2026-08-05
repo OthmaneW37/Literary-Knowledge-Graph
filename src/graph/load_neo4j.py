@@ -4,8 +4,15 @@ import json
 import os
 from pathlib import Path
 
-from neo4j import GraphDatabase
 from dotenv import load_dotenv
+from neo4j import GraphDatabase
+
+from src.extraction.entity_resolution import (
+    EntityCandidate,
+    Mention,
+    absorb_entities,
+    resolve_mention,
+)
 
 load_dotenv()
 
@@ -26,26 +33,26 @@ SET c.work_id = $work_id,
 """
 
 CHARACTER_QUERY = """
-MERGE (p:Character {name: $name})
+MERGE (p:Character {canonical_name: $canonical_name})
+ON CREATE SET p.aliases = $aliases, p.mentions = $mentions
+ON MATCH SET p.aliases = $aliases, p.mentions = $mentions
 """
 
 THEME_QUERY = """
 MERGE (t:Theme {name: $name})
+ON CREATE SET t.mentions = 1
+ON MATCH SET t.mentions = coalesce(t.mentions, 0) + 1
 """
 
 EVENT_QUERY = """
 MERGE (e:Event {summary: $summary})
-"""
-
-HAS_CHUNK_QUERY = """
-MATCH (w:Work {work_id: $work_id})
-MATCH (c:Chunk {chunk_id: $chunk_id})
-MERGE (w)-[:HAS_CHUNK]->(c)
+ON CREATE SET e.mentions = 1
+ON MATCH SET e.mentions = coalesce(e.mentions, 0) + 1
 """
 
 MENTIONS_CHARACTER_QUERY = """
 MATCH (c:Chunk {chunk_id: $chunk_id})
-MATCH (p:Character {name: $name})
+MATCH (p:Character {canonical_name: $canonical_name})
 MERGE (c)-[:MENTIONS_CHARACTER]->(p)
 """
 
@@ -59,6 +66,12 @@ HAS_EVENT_QUERY = """
 MATCH (c:Chunk {chunk_id: $chunk_id})
 MATCH (e:Event {summary: $summary})
 MERGE (c)-[:HAS_EVENT]->(e)
+"""
+
+HAS_CHUNK_QUERY = """
+MATCH (w:Work {work_id: $work_id})
+MATCH (c:Chunk {chunk_id: $chunk_id})
+MERGE (w)-[:HAS_CHUNK]->(c)
 """
 
 
@@ -91,24 +104,120 @@ def load_graph(
                 extractions = json.loads(extractions_path.read_text(encoding="utf-8"))
                 extraction_by_chunk = {item["chunk_id"]: item for item in extractions}
 
+                global_entities: list[EntityCandidate] = []
+
                 for chunk in chunks:
                     session.run(CHUNK_QUERY, **chunk)
-                    session.run(HAS_CHUNK_QUERY, work_id=chunk["work_id"], chunk_id=chunk["chunk_id"])
+                    session.run(
+                        HAS_CHUNK_QUERY,
+                        work_id=chunk["work_id"],
+                        chunk_id=chunk["chunk_id"],
+                    )
 
                     extraction = extraction_by_chunk.get(chunk["chunk_id"], {})
-                    for name in extraction.get("characters", []):
-                        session.run(CHARACTER_QUERY, name=name)
-                        session.run(MENTIONS_CHARACTER_QUERY, chunk_id=chunk["chunk_id"], name=name)
+                    mentions = extraction.get("mentions", [])
 
-                    for name in extraction.get("themes", []):
-                        session.run(THEME_QUERY, name=name)
-                        session.run(HAS_THEME_QUERY, chunk_id=chunk["chunk_id"], name=name)
+                    valid_mentions = []
+                    for mention in mentions:
+                        if not isinstance(mention, dict):
+                            continue
+                        text = mention.get("text", "")
+                        if not text:
+                            continue
+                        low = text.lower().strip()
+                        if len(low.split()) > 4:
+                            continue
+                        if low in {"he", "she", "it", "they", "his", "her", "their", "him", "them"}:
+                            continue
+                        if any(
+                            x in low
+                            for x in [
+                                "clock",
+                                "door",
+                                "room",
+                                "pain",
+                                "silence",
+                                "weather",
+                                "train",
+                                "picture",
+                                "chair",
+                                "muff",
+                                "frame",
+                                "table",
+                                "lamp",
+                                "budget",
+                                "work",
+                                "time",
+                                "gas",
+                                "gaslight",
+                                "couch",
+                                "newspaper",
+                                "alarm",
+                                "locksmith",
+                            ]
+                        ):
+                            continue
+                        valid_mentions.append(mention)
+
+                    chunk_entities: list[EntityCandidate] = []
+
+                    for mention in valid_mentions:
+                        m = Mention(
+                            text=mention.get("text", ""),
+                            context=mention.get("context", ""),
+                            chapter=mention.get("chapter", chunk.get("chapter", "")),
+                        )
+
+                        canonical_name, aliases, matched = resolve_mention(m, global_entities)
+                        if not canonical_name:
+                            continue
+
+                        entity = next((e for e in global_entities if e.canonical_name == canonical_name), None)
+                        if entity is None:
+                            entity = EntityCandidate(canonical_name=canonical_name)
+                            global_entities.append(entity)
+
+                        entity.aliases.update(aliases)
+                        if m.context:
+                            entity.contexts.add(m.context)
+                        if m.chapter:
+                            entity.contexts.add(m.chapter)
+                        entity.mentions += 1
+
+                        chunk_entities.append(entity)
+
+                    for entity in chunk_entities:
+                        session.run(
+                            CHARACTER_QUERY,
+                            canonical_name=entity.canonical_name,
+                            aliases=sorted(entity.aliases),
+                            mentions=entity.mentions,
+                        )
+                        session.run(
+                            MENTIONS_CHARACTER_QUERY,
+                            chunk_id=chunk["chunk_id"],
+                            canonical_name=entity.canonical_name,
+                        )
+
+                    for theme in extraction.get("themes", []):
+                        if isinstance(theme, dict) and theme.get("name"):
+                            session.run(THEME_QUERY, name=theme["name"])
+                            session.run(
+                                HAS_THEME_QUERY,
+                                chunk_id=chunk["chunk_id"],
+                                name=theme["name"],
+                            )
 
                     for event in extraction.get("events", []):
-                        summary = event.get("summary")
-                        if summary:
-                            session.run(EVENT_QUERY, summary=summary)
-                            session.run(HAS_EVENT_QUERY, chunk_id=chunk["chunk_id"], summary=summary)
+                        if isinstance(event, dict) and event.get("summary"):
+                            session.run(EVENT_QUERY, summary=event["summary"])
+                            session.run(
+                                HAS_EVENT_QUERY,
+                                chunk_id=chunk["chunk_id"],
+                                summary=event["summary"],
+                            )
+
+            global_entities = absorb_entities(global_entities)
 
     return True
 

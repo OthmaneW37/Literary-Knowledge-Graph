@@ -6,67 +6,162 @@ from typing import Any
 
 import ollama
 
+
 MODEL_NAME = "qwen2.5:7b-instruct"
+
+BANNED_MENTION_STARTS = {
+    "the",
+    "a",
+    "an",
+    "his",
+    "her",
+    "their",
+    "its",
+    "this",
+    "that",
+    "these",
+    "those",
+    "he",
+    "she",
+    "it",
+    "they",
+    "we",
+    "i",
+    "you",
+}
+
+BANNED_MENTION_CONTAINS = {
+    "clock",
+    "door",
+    "room",
+    "pain",
+    "silence",
+    "weather",
+    "train",
+    "picture",
+    "chair",
+    "muff",
+    "frame",
+    "table",
+    "window",
+    "bed",
+    "wall",
+    "needle",
+    "lamp",
+    "sound",
+    "voice",
+    "conversation",
+    "budget",
+    "work",
+    "time",
+    "itch",
+    "legs",
+    "gas",
+    "gaslight",
+    "couch",
+    "newspaper",
+    "alarm",
+    "locksmith",
+}
+
+VERB_HINTS = {
+    "would",
+    "could",
+    "should",
+    "was",
+    "were",
+    "is",
+    "are",
+    "be",
+    "being",
+    "been",
+    "run",
+    "leave",
+    "keep",
+    "speak",
+    "tug",
+    "throw",
+    "sit",
+    "sleep",
+    "learn",
+    "go",
+    "come",
+    "see",
+    "hear",
+    "exclaim",
+    "ask",
+    "say",
+}
 
 
 def build_prompt(chunk_text: str) -> str:
     return f"""
-You are extracting literary information from a novel passage.
+Extract structured literary entities from the passage below.
 
 Return ONLY valid JSON with this schema:
 {{
-  "characters": ["..."],
+  "mentions": [
+    {{
+      "text": "surface form exactly as seen in the passage",
+      "context": "short local context",
+      "chapter": "chapter or section label if available"
+    }}
+  ],
   "relations": [
     {{
-      "source": "...",
-      "target": "...",
+      "source": "exact mention",
+      "target": "exact mention",
       "type": "FAMILY|AUTHORITY_OVER|CONFLICT_WITH|ASSISTS|COMMUNICATES_WITH|OBSERVES",
-      "evidence": "..."
+      "evidence": "short verbatim quote"
     }}
   ],
-  "themes": ["alienation", "bureaucracy", "family", "guilt", "identity", "authority"],
+  "themes": [
+    {{"name": "alienation"}},
+    {{"name": "family"}},
+    {{"name": "identity"}},
+    {{"name": "authority"}},
+    {{"name": "bureaucracy"}},
+    {{"name": "guilt"}}
+  ],
   "events": [
     {{
-      "summary": "...",
-      "participants": ["..."],
-      "evidence": "..."
+      "summary": "short event summary",
+      "participants": ["exact mention"],
+      "evidence": "short verbatim quote"
     }}
   ],
-  "evidence_quote": "...",
+  "evidence_quote": "short verbatim quote from the passage",
   "confidence": 0.0
 }}
 
 Rules:
-- Use only names explicitly present or strongly implied in the text.
-- Keep evidence short and verbatim.
-- If nothing is found, return empty lists.
-- Confidence must be between 0 and 1.
-- Output raw JSON only. No markdown. No code fences.
+- Do not resolve coreference manually.
+- Do not invent canonical names.
+- Extract mentions only as they appear.
+- Keep context short.
+- Return raw JSON only.
 
 Passage:
 {chunk_text}
 """
 
 
-def _clean_json_text(text: str) -> str:
+def clean_json(text: str) -> str:
     text = text.strip()
-
     if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?", "", text.strip(), flags=re.IGNORECASE)
-        text = re.sub(r"```$", "", text.strip())
-
+        text = re.sub(r"^```(?:json)?", "", text, flags=re.IGNORECASE).strip()
+        text = re.sub(r"```$", "", text).strip()
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
         text = text[start : end + 1]
-
     text = re.sub(r",\s*([}\]])", r"\1", text)
     return text
 
 
-def _default_payload(chunk_text: str) -> dict[str, Any]:
+def default_payload(chunk_text: str) -> dict[str, Any]:
     return {
-        "characters": [],
+        "mentions": [],
         "relations": [],
         "themes": [],
         "events": [],
@@ -75,7 +170,39 @@ def _default_payload(chunk_text: str) -> dict[str, Any]:
     }
 
 
-def call_llm(prompt: str, chunk_text: str) -> dict[str, Any]:
+def is_valid_mention(text: str) -> bool:
+    if not isinstance(text, str):
+        return False
+
+    t = text.strip()
+    if not t:
+        return False
+
+    if len(t.split()) > 5:
+        return False
+
+    first = t.split()[0].lower().strip(".,;:!?\"'")
+    if first in BANNED_MENTION_STARTS:
+        return False
+
+    low = t.lower()
+    if any(b in low for b in BANNED_MENTION_CONTAINS):
+        return False
+
+    if any(v in low.split() for v in VERB_HINTS):
+        return False
+
+    if re.search(r"\b(he|she|it|they|his|her|their|them|him)\b", low):
+        return False
+
+    if re.search(r"[.,;:!?]{2,}", t):
+        return False
+
+    return True
+
+
+def extract_chunk_llm(chunk_text: str) -> dict[str, Any]:
+    prompt = build_prompt(chunk_text)
     response = ollama.chat(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
@@ -83,27 +210,27 @@ def call_llm(prompt: str, chunk_text: str) -> dict[str, Any]:
         format="json",
     )
 
-    content = response["message"]["content"]
-    content = _clean_json_text(content)
+    raw = clean_json(response["message"]["content"])
 
     try:
-        data = json.loads(content)
+        data = json.loads(raw)
     except json.JSONDecodeError:
-        return _default_payload(chunk_text)
+        return default_payload(chunk_text)
 
     if not isinstance(data, dict):
-        return _default_payload(chunk_text)
+        return default_payload(chunk_text)
 
-    data.setdefault("characters", [])
+    data.setdefault("mentions", [])
     data.setdefault("relations", [])
     data.setdefault("themes", [])
     data.setdefault("events", [])
     data.setdefault("evidence_quote", chunk_text[:500])
     data.setdefault("confidence", 0.0)
 
+    mentions = []
+    for item in data.get("mentions", []):
+        if isinstance(item, dict) and is_valid_mention(item.get("text", "")):
+            mentions.append(item)
+    data["mentions"] = mentions
+
     return data
-
-
-def extract_chunk_llm(chunk_text: str) -> dict[str, Any]:
-    prompt = build_prompt(chunk_text)
-    return call_llm(prompt, chunk_text)
