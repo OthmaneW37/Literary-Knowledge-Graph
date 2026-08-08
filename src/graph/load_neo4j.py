@@ -7,7 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
-from src.extraction.entity_resolution import (
+from extraction.entity_resolution import (
     EntityCandidate,
     Mention,
     absorb_entities,

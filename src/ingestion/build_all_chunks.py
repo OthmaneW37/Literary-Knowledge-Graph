@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from chunk_text import build_chunks_for_work
+from .chunk_text import build_chunks_for_work
 
 
 def build_all_chunks(

@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from clean_text import clean_text
-from extract_epub import extract_epub_to_txt
+from .clean_text import clean_text
+from .extract_epub import extract_epub_to_txt
 
 
 def process_corpus(

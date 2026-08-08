@@ -10,8 +10,19 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "ebooklib",
-    "beautifulsoup4"
+    "beautifulsoup4",
+    "graphviz>=0.20",
+    "neo4j>=5.20",
+    "ollama>=0.4",
+    "python-dotenv>=1.0",
+    "streamlit>=1.40"
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+literary-chat = "rag.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

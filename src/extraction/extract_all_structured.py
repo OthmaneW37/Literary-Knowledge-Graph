@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from llm_extract import extract_chunk_llm
+from .llm_extract import extract_chunk_llm
 
 
 def extract_from_chunks_file(chunks_path: str | Path, output_path: str | Path) -> Path:

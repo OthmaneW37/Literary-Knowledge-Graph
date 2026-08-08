@@ -7,29 +7,39 @@ from pathlib import Path
 
 def split_into_chapters(text: str) -> list[tuple[int, str]]:
     patterns = [
-        r"(?im)^\s*chapter\s+([ivxlcdm0-9]+)\s*$",
-        r"(?im)^\s*chapitre\s+([ivxlcdm0-9]+)\s*$",
+        r"(?im)^\s*(?:chapter|chapitre)\s+(?:[ivxlcdm0-9]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*$",
+        r"(?im)^\s*(?:part|partie)\s+(?:[ivxlcdm0-9]+|one|two|three|four|five|six|seven|eight|nine|ten)\s*$",
+        r"(?m)^\s*(?:I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)\s*$",
     ]
 
     matches = []
     for pattern in patterns:
         matches.extend(list(re.finditer(pattern, text)))
 
+    # Several patterns may find the same heading. Processing must follow the
+    # actual order in the book, not the order of the regular expressions.
+    matches = sorted({(match.start(), match.end()): match for match in matches}.values(), key=lambda m: m.start())
+
     if not matches:
         return [(1, text.strip())]
 
-    chapters = []
+    candidates = []
     for i, match in enumerate(matches):
         start = match.start()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        chapter_num = i + 1
         chapter_text = text[start:end].strip()
-        chapters.append((chapter_num, chapter_text))
+        candidates.append(chapter_text)
+
+    # EPUB tables of contents often repeat all headings consecutively before
+    # the actual book. Those tiny pseudo-chapters must not become citations.
+    substantive = [chapter for chapter in candidates if len(chapter.split()) >= 50]
+    selected = substantive or candidates
+    chapters = [(chapter_num, chapter) for chapter_num, chapter in enumerate(selected, start=1)]
 
     return chapters
 
 
-def chunk_text(text: str, chunk_size: int = 1200, overlap: int = 150) -> list[str]:
+def chunk_text(text: str, chunk_size: int = 600, overlap: int = 100) -> list[str]:
     words = text.split()
     if not words:
         return []
