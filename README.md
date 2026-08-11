@@ -111,7 +111,10 @@ Les modules principaux sont :
 
 - `src/ingestion` : extraction, nettoyage et découpage ;
 - `src/rag/local_index.py` : index BM25 sans service externe ;
-- `src/rag/engine.py` : récupération, génération et validation ;
+- `src/retrieval/query_analyzer.py` : classification et réécriture multilingue ;
+- `src/retrieval/hybrid_retriever.py` : orchestration BM25 + Neo4j ;
+- `src/retrieval/graph_retriever.py` : relations sourcées entre personnages ;
+- `src/rag/engine.py` : génération, validation et visualisation ;
 - `app/streamlit_app.py` : interface utilisateur ;
 - `src/extraction` : extraction structurée destinée au graphe permanent ;
 - `src/graph` : chargement Neo4j optionnel.
@@ -124,6 +127,27 @@ python -m pytest -q
 
 Les tests n'appellent pas Ollama : ils utilisent des réponses simulées pour
 valider la recherche, les citations, les graphes et le mode de secours.
+
+## Activer Neo4j
+
+Neo4j reste facultatif : sans connexion, le chat continue avec les passages
+textuels. Pour activer le graphe persistant, renseignez dans `.env` :
+
+```text
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=votre_mot_de_passe
+```
+
+Après avoir produit les extractions structurées correspondant aux chunks
+actuels, chargez le graphe :
+
+```powershell
+python -m graph.load_neo4j
+```
+
+Les personnages sont séparés par œuvre. Chaque relation conserve son type,
+son `work_id`, son passage de preuve et la citation extraite.
 
 ## Limites actuelles
 

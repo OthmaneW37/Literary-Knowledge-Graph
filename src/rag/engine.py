@@ -9,9 +9,16 @@ from typing import Any
 import ollama
 from dotenv import load_dotenv
 
-from .local_index import LocalLiteraryIndex
 from .models import Answer, GraphEdge, GraphNode, Passage, Visualization
 
+from retrieval import (
+    GraphRetrievalResult,
+    GraphRetriever,
+    HybridRetriever,
+    LexicalRetriever,
+    QueryAnalysis,
+    QueryAnalyzer,
+)
 
 load_dotenv()
 
@@ -21,6 +28,7 @@ RELATIONSHIP_HINTS = {
     "family", "famille", "père", "pere", "mère", "mere", "frère", "frere",
     "sœur", "soeur", "fils", "fille", "relation", "relationship", "lié", "lie",
 }
+
 
 
 def _clean_json(value: str) -> dict[str, Any]:
@@ -40,12 +48,35 @@ class LiteraryAssistant:
         manifest_path: str | Path = "data/annotations/work_manifest.json",
         processed_dir: str | Path = "data/processed",
         model: str | None = None,
+        retriever: HybridRetriever | None = None,
     ) -> None:
-        self.index = LocalLiteraryIndex(manifest_path, processed_dir)
         self.model = model or os.getenv("OLLAMA_MODEL", DEFAULT_MODEL)
+        if retriever is None:
+            lexical = LexicalRetriever(manifest_path, processed_dir)
+            retriever = HybridRetriever(
+                lexical=lexical,
+                analyzer=QueryAnalyzer(self.model),
+                graph=GraphRetriever(),
+            )
+        self.hybrid_retriever = retriever
+        # Kept as a public compatibility alias for the Streamlit sidebar and
+        # callers that inspect works or corpus statistics.
+        self.index = retriever.lexical.index
 
-    def retrieve(self, question: str, work_ids: list[str] | None = None, top_k: int = 6) -> list[Passage]:
-        return self.index.search(question, work_ids=work_ids, top_k=top_k)
+    def retrieve(
+        self,
+        question: str,
+        work_ids: list[str] | None = None,
+        top_k: int = 6,
+        history: list[dict[str, str]] | None = None,
+    ) -> list[Passage]:
+        result = self.hybrid_retriever.retrieve(
+            question,
+            work_ids=work_ids,
+            top_k=top_k,
+            history=history,
+        )
+        return self._merge_graph_evidence(result.passages, result.graph, work_ids)
 
     def answer(
         self,
@@ -54,8 +85,13 @@ class LiteraryAssistant:
         top_k: int = 6,
         history: list[dict[str, str]] | None = None,
     ) -> Answer:
-        expanded_query = self._expand_query(question, history)
-        passages = self.retrieve(expanded_query, work_ids=work_ids, top_k=top_k)
+        retrieval = self.hybrid_retriever.retrieve(
+            question,
+            work_ids=work_ids,
+            top_k=top_k,
+            history=history,
+        )
+        passages = self._merge_graph_evidence(retrieval.passages, retrieval.graph, work_ids)
         if not passages:
             return Answer(
                 text="Je n’ai trouvé aucun passage suffisamment pertinent dans les œuvres sélectionnées.",
@@ -64,10 +100,43 @@ class LiteraryAssistant:
             )
 
         try:
-            payload = self._call_model(question, passages, history)
-            return self._validate_answer(payload, passages)
+            payload = self._call_model(
+                question,
+                passages,
+                history,
+                graph_result=retrieval.graph,
+                analysis=retrieval.analysis,
+            )
+            answer = self._validate_answer(payload, passages)
+            if not answer.visualization.is_visible and retrieval.graph.relationships:
+                graph_visualization = self._visualization_from_graph(retrieval.graph, passages)
+                if graph_visualization.is_visible:
+                    answer.visualization = graph_visualization
+                    cited = {passage.chunk_id for passage in answer.citations}
+                    passages_by_id = {passage.chunk_id: passage for passage in passages}
+                    for edge in graph_visualization.edges:
+                        if edge.evidence_chunk_id not in cited:
+                            answer.citations.append(passages_by_id[edge.evidence_chunk_id])
+                            cited.add(edge.evidence_chunk_id)
+            return answer
         except Exception as exc:
             return self._extractive_fallback(question, passages, exc)
+
+    def _merge_graph_evidence(
+        self,
+        passages: list[Passage],
+        graph_result: GraphRetrievalResult,
+        work_ids: list[str] | None,
+    ) -> list[Passage]:
+        merged = list(passages)
+        known_ids = {passage.chunk_id for passage in merged}
+        selected_works = set(work_ids or self.index.works)
+        for chunk_id in graph_result.evidence_chunk_ids:
+            passage = self.index.get_passage(chunk_id)
+            if passage and passage.work_id in selected_works and chunk_id not in known_ids:
+                merged.append(passage)
+                known_ids.add(chunk_id)
+        return merged
 
     def _expand_query(self, question: str, history: list[dict[str, str]] | None = None) -> str:
         """Add English literary search terms while preserving names and wording.
@@ -110,6 +179,8 @@ Question : {question}
         question: str,
         passages: list[Passage],
         history: list[dict[str, str]] | None = None,
+        graph_result: GraphRetrievalResult | None = None,
+        analysis: QueryAnalysis | None = None,
     ) -> dict[str, Any]:
         context = "\n\n".join(
             f"[SOURCE {passage.chunk_id}]\n"
@@ -117,7 +188,15 @@ Question : {question}
             f"Texte: {passage.text}"
             for passage in passages
         )
-        wants_graph = bool(set(re.findall(r"[^\W_]+", question.casefold())) & RELATIONSHIP_HINTS)
+        wants_graph = bool(
+            (analysis and analysis.use_graph)
+            or set(re.findall(r"[^\W_]+", question.casefold())) & RELATIONSHIP_HINTS
+        )
+        graph_context = "\n".join(
+            f"- {relationship.source} --{relationship.relation}--> {relationship.target} "
+            f"[SOURCE {relationship.evidence_chunk_id or 'sans preuve'}]"
+            for relationship in (graph_result.relationships if graph_result else [])
+        )
         recent_context = "\n".join(
             f"{item.get('role', '')}: {item.get('content', '')[:1000]}"
             for item in (history or [])[-6:]
@@ -154,6 +233,9 @@ Historique récent de la conversation :
 
 Question actuelle : {question}
 
+Relations validées provenant de Neo4j :
+{graph_context or '(aucune relation disponible)'}
+
 Sources :
 {context}
 """.strip()
@@ -184,6 +266,9 @@ Sources :
             valid_ids = [passages[0].chunk_id]
 
         visualization = self._validate_visualization(payload.get("visualization"), allowed, valid_ids)
+        for edge in visualization.edges:
+            if edge.evidence_chunk_id not in valid_ids:
+                valid_ids.append(edge.evidence_chunk_id)
         return Answer(
             text=answer_text,
             citations=[allowed[chunk_id] for chunk_id in valid_ids],
@@ -243,6 +328,38 @@ Sources :
         return Visualization(graph_type, str(raw.get("title", "")).strip(), nodes, edges)
 
     @staticmethod
+    def _visualization_from_graph(
+        graph_result: GraphRetrievalResult,
+        passages: list[Passage],
+    ) -> Visualization:
+        allowed_ids = {passage.chunk_id for passage in passages}
+        node_labels: list[str] = []
+        edges: list[GraphEdge] = []
+        for relationship in graph_result.relationships:
+            evidence = relationship.evidence_chunk_id or ""
+            if evidence not in allowed_ids:
+                continue
+            for label in (relationship.source, relationship.target):
+                if label not in node_labels:
+                    node_labels.append(label)
+            edges.append(
+                GraphEdge(
+                    source=relationship.source,
+                    target=relationship.target,
+                    label=relationship.relation,
+                    evidence_chunk_id=evidence,
+                )
+            )
+        if not edges:
+            return Visualization()
+        return Visualization(
+            type="relationship_graph",
+            title="Relations entre les personnages",
+            nodes=[GraphNode(label, label, "character") for label in node_labels],
+            edges=edges,
+        )
+
+    @staticmethod
     def _extractive_fallback(question: str, passages: list[Passage], error: Exception) -> Answer:
         excerpts = []
         for passage in passages[:3]:
@@ -261,7 +378,13 @@ Sources :
 
 def visualization_to_dot(visualization: Visualization) -> str:
     """Convert a validated visualization to Graphviz DOT for Streamlit."""
-    lines = ["digraph LiteraryGraph {", "rankdir=TB;", 'node [shape=box, style="rounded,filled", fillcolor="#F5E9D8"];']
+    lines = [
+        "digraph LiteraryGraph {",
+        "rankdir=TB;",
+        'graph [bgcolor="transparent", pad="0.35", nodesep="0.55", ranksep="0.75"];',
+        'node [shape=box, style="rounded,filled", fillcolor="#F5E9D8", fontcolor="#151A22"];',
+        'edge [color="#E8C07D", fontcolor="#F5E9D8", penwidth="1.5"];',
+    ]
     for node in visualization.nodes:
         safe_id = json.dumps(node.id)
         safe_label = json.dumps(node.label, ensure_ascii=False)

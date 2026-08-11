@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -11,6 +12,9 @@ from extraction.entity_resolution import (
     EntityCandidate,
     Mention,
     absorb_entities,
+    combined_name_similarity,
+    looks_like_character,
+    normalize_key,
     resolve_mention,
 )
 
@@ -33,7 +37,7 @@ SET c.work_id = $work_id,
 """
 
 CHARACTER_QUERY = """
-MERGE (p:Character {canonical_name: $canonical_name})
+MERGE (p:Character {work_id: $work_id, canonical_name: $canonical_name})
 ON CREATE SET p.aliases = $aliases, p.mentions = $mentions
 ON MATCH SET p.aliases = $aliases, p.mentions = $mentions
 """
@@ -52,8 +56,19 @@ ON MATCH SET e.mentions = coalesce(e.mentions, 0) + 1
 
 MENTIONS_CHARACTER_QUERY = """
 MATCH (c:Chunk {chunk_id: $chunk_id})
-MATCH (p:Character {canonical_name: $canonical_name})
+MATCH (p:Character {work_id: $work_id, canonical_name: $canonical_name})
 MERGE (c)-[:MENTIONS_CHARACTER]->(p)
+"""
+
+CHARACTER_RELATIONSHIP_QUERY = """
+MATCH (source:Character {work_id: $work_id, canonical_name: $source})
+MATCH (target:Character {work_id: $work_id, canonical_name: $target})
+MERGE (source)-[r:CHARACTER_RELATION {
+    work_id: $work_id,
+    relation_type: $relation_type,
+    evidence_chunk_id: $chunk_id
+}]->(target)
+SET r.evidence = $evidence
 """
 
 HAS_THEME_QUERY = """
@@ -82,6 +97,47 @@ def get_driver():
     if not uri or not user or not password:
         raise ValueError("Missing NEO4J_URI, NEO4J_USER, or NEO4J_PASSWORD")
     return GraphDatabase.driver(uri, auth=(user, password))
+
+
+def match_existing_entity(
+    surface_name: str,
+    entities: list[EntityCandidate],
+    threshold: float = 0.82,
+) -> str | None:
+    """Resolve a relation endpoint without creating an unsupported entity."""
+    if not looks_like_character(surface_name):
+        return None
+
+    normalized = normalize_key(surface_name)
+    for entity in entities:
+        names = [entity.canonical_name, *entity.aliases]
+        if any(normalize_key(name) == normalized for name in names):
+            return entity.canonical_name
+
+    best_name = None
+    best_score = 0.0
+    for entity in entities:
+        score = max(
+            combined_name_similarity(surface_name, entity.canonical_name),
+            max(
+                (combined_name_similarity(surface_name, alias) for alias in entity.aliases),
+                default=0.0,
+            ),
+        )
+        if score > best_score:
+            best_score = score
+            best_name = entity.canonical_name
+    return best_name if best_score >= threshold else None
+
+
+def extraction_matches_chunk(extraction: dict, chunk_text: str) -> bool:
+    """Reject extraction files produced from an older chunking layout."""
+    evidence = extraction.get("evidence_quote")
+    if not isinstance(evidence, str) or not evidence.strip():
+        return False
+    normalized_evidence = re.sub(r"\s+", " ", evidence).strip()[:160]
+    normalized_chunk = re.sub(r"\s+", " ", chunk_text).strip()
+    return normalized_evidence in normalized_chunk
 
 
 def load_graph(
@@ -115,6 +171,8 @@ def load_graph(
                     )
 
                     extraction = extraction_by_chunk.get(chunk["chunk_id"], {})
+                    if extraction and not extraction_matches_chunk(extraction, chunk["text"]):
+                        extraction = {}
                     mentions = extraction.get("mentions", [])
 
                     valid_mentions = []
@@ -189,14 +247,40 @@ def load_graph(
                     for entity in chunk_entities:
                         session.run(
                             CHARACTER_QUERY,
+                            work_id=chunk["work_id"],
                             canonical_name=entity.canonical_name,
                             aliases=sorted(entity.aliases),
                             mentions=entity.mentions,
                         )
                         session.run(
                             MENTIONS_CHARACTER_QUERY,
+                            work_id=chunk["work_id"],
                             chunk_id=chunk["chunk_id"],
                             canonical_name=entity.canonical_name,
+                        )
+
+                    for relation in extraction.get("relations", []):
+                        if not isinstance(relation, dict):
+                            continue
+                        source = match_existing_entity(
+                            str(relation.get("source", "")),
+                            global_entities,
+                        )
+                        target = match_existing_entity(
+                            str(relation.get("target", "")),
+                            global_entities,
+                        )
+                        relation_type = str(relation.get("type", "")).strip().upper()
+                        if not source or not target or source == target or not relation_type:
+                            continue
+                        session.run(
+                            CHARACTER_RELATIONSHIP_QUERY,
+                            work_id=chunk["work_id"],
+                            chunk_id=chunk["chunk_id"],
+                            source=source,
+                            target=target,
+                            relation_type=relation_type,
+                            evidence=str(relation.get("evidence", ""))[:500],
                         )
 
                     for theme in extraction.get("themes", []):

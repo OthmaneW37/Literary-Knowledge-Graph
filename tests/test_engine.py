@@ -1,18 +1,29 @@
 from rag.engine import LiteraryAssistant
+from retrieval import GraphRetrievalResult, QueryAnalysis, RetrievalResult
 
 from test_local_index import make_index
 
 
+class StubRetriever:
+    def __init__(self, index, graph=None):
+        self.lexical = type("Lexical", (), {"index": index})()
+        self.graph = graph or GraphRetrievalResult(available=False)
+
+    def retrieve(self, question, work_ids=None, top_k=6, history=None):
+        return RetrievalResult(
+            passages=self.lexical.index.search(question, work_ids=work_ids, top_k=top_k),
+            analysis=QueryAnalysis(rewritten_query=question),
+            graph=self.graph,
+        )
+
+
 def test_answer_validates_citations_and_graph(monkeypatch, tmp_path) -> None:
     index = make_index(tmp_path)
-    assistant = LiteraryAssistant.__new__(LiteraryAssistant)
-    assistant.index = index
-    assistant.model = "test-model"
-    monkeypatch.setattr(assistant, "_expand_query", lambda question, history=None: question)
+    assistant = LiteraryAssistant(model="test-model", retriever=StubRetriever(index))
     monkeypatch.setattr(
         assistant,
         "_call_model",
-        lambda question, passages, history=None: {
+        lambda question, passages, history=None, graph_result=None, analysis=None: {
             "answer": "Josef K. est arrêté. [trial_1] [invented]",
             "citation_ids": ["trial_1", "invented"],
             "visualization": {
@@ -38,11 +49,14 @@ def test_answer_validates_citations_and_graph(monkeypatch, tmp_path) -> None:
 
 def test_answer_has_extractive_fallback(monkeypatch, tmp_path) -> None:
     index = make_index(tmp_path)
-    assistant = LiteraryAssistant.__new__(LiteraryAssistant)
-    assistant.index = index
-    assistant.model = "test-model"
-    monkeypatch.setattr(assistant, "_expand_query", lambda question, history=None: question)
-    monkeypatch.setattr(assistant, "_call_model", lambda question, passages, history=None: (_ for _ in ()).throw(RuntimeError("offline")))
+    assistant = LiteraryAssistant(model="test-model", retriever=StubRetriever(index))
+    monkeypatch.setattr(
+        assistant,
+        "_call_model",
+        lambda question, passages, history=None, graph_result=None, analysis=None: (
+            _ for _ in ()
+        ).throw(RuntimeError("offline")),
+    )
 
     answer = assistant.answer("Josef arrested", work_ids=["trial"])
 

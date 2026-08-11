@@ -16,6 +16,28 @@ from rag.engine import LiteraryAssistant, visualization_to_dot  # noqa: E402
 
 st.set_page_config(page_title="Literary Chat", page_icon="📚", layout="wide")
 
+# Streamlit 1.40 can collapse an SVG returned by graphviz_chart to 0px when
+# the SVG has only a viewBox (which is what the built-in renderer produces).
+# Give relationship diagrams an explicit responsive drawing area.
+st.markdown(
+    """
+    <style>
+    [data-testid="stGraphVizChart"] {
+        width: 100% !important;
+        min-height: 360px;
+        padding: 0.5rem 0;
+    }
+    [data-testid="stGraphVizChart"] > svg {
+        display: block;
+        width: 100% !important;
+        height: 340px !important;
+        margin: 0 auto;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 @st.cache_resource
 def get_assistant() -> LiteraryAssistant:
