@@ -11,6 +11,8 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from catalog import GutendexClient, LibraryImporter  # noqa: E402
+from catalog.gutendex import CatalogError  # noqa: E402
 from rag.engine import LiteraryAssistant, visualization_to_dot  # noqa: E402
 
 
@@ -47,7 +49,14 @@ def get_assistant() -> LiteraryAssistant:
     )
 
 
+@st.cache_resource
+def get_catalog_client() -> GutendexClient:
+    return GutendexClient()
+
+
 assistant = get_assistant()
+catalog_client = get_catalog_client()
+library_importer = LibraryImporter(PROJECT_ROOT / "data")
 works = assistant.index.works
 
 st.title("📚 Literary Chat")
@@ -65,6 +74,74 @@ with st.sidebar:
     st.caption(f"Modèle local : `{assistant.model}`")
     for work_id, count in assistant.index.stats().items():
         st.caption(f"{works[work_id].title} : {count} passages")
+
+    if notice := st.session_state.pop("catalog_notice", None):
+        st.success(notice)
+
+    with st.expander("➕ Ajouter un livre", expanded=False):
+        st.caption("Catalogue public Gutendex · Project Gutenberg")
+        with st.form("catalog_search_form"):
+            catalog_query = st.text_input(
+                "Titre ou auteur",
+                placeholder="Dostoevsky, Jane Austen, Candide…",
+            )
+            language_options = {
+                "Toutes les langues": None,
+                "Français": "fr",
+                "Anglais": "en",
+                "Espagnol": "es",
+                "Allemand": "de",
+                "Italien": "it",
+                "Portugais": "pt",
+            }
+            language_label = st.selectbox("Langue", list(language_options))
+            search_submitted = st.form_submit_button("Rechercher", use_container_width=True)
+
+        if search_submitted:
+            try:
+                page = catalog_client.search(
+                    catalog_query,
+                    language=language_options[language_label],
+                )
+                st.session_state.catalog_results = list(page.books)
+                st.session_state.catalog_total = page.count
+                st.session_state.catalog_error = ""
+            except (CatalogError, ValueError) as exc:
+                st.session_state.catalog_results = []
+                st.session_state.catalog_error = str(exc)
+
+        if catalog_error := st.session_state.get("catalog_error"):
+            st.error(catalog_error)
+
+        catalog_results = st.session_state.get("catalog_results", [])
+        if catalog_results:
+            st.caption(f"{st.session_state.get('catalog_total', len(catalog_results))} résultat(s)")
+            installed_ids = library_importer.installed_ids()
+            for book in catalog_results:
+                st.markdown(f"**{book.title}**")
+                st.caption(
+                    f"{book.author_display} · {book.language_display} · "
+                    f"{book.download_count:,} téléchargements"
+                )
+                already_installed = book.work_id in installed_ids
+                button_label = "✓ Déjà installé" if already_installed else "Télécharger et indexer"
+                if st.button(
+                    button_label,
+                    key=f"install_catalog_{book.provider_id}",
+                    disabled=already_installed,
+                    use_container_width=True,
+                ):
+                    try:
+                        with st.spinner(f"Indexation de « {book.title} »…"):
+                            installed = library_importer.install(book, catalog_client.download(book))
+                        get_assistant.clear()
+                        st.session_state.catalog_results = []
+                        st.session_state.catalog_notice = f"« {installed.title} » est prêt dans la bibliothèque."
+                        st.rerun()
+                    except (CatalogError, ValueError, OSError) as exc:
+                        st.error(str(exc))
+                st.divider()
+
     if st.button("Effacer la conversation", use_container_width=True):
         st.session_state.messages = []
         st.rerun()

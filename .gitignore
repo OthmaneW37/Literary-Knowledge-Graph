@@ -22,6 +22,7 @@ Thumbs.db
 # Data
 data/raw/
 data/processed/
+data/library/
 !data/.gitkeep
 !data/annotations/
 

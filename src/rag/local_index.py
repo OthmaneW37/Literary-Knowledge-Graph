@@ -60,7 +60,7 @@ class LocalLiteraryIndex:
         self._load()
 
     def _load(self) -> None:
-        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        manifest = self._load_manifest_records()
         for item in manifest:
             work = Work(
                 work_id=item["work_id"],
@@ -90,6 +90,26 @@ class LocalLiteraryIndex:
 
         if not self.passages:
             raise ValueError("No chunk files found. Run the ingestion pipeline first.")
+
+    def _load_manifest_records(self) -> list[dict]:
+        """Merge bundled works with books installed in the local library."""
+        paths = [self.manifest_path]
+        local_catalog = self.manifest_path.parent.parent / "library" / "installed_books.json"
+        if local_catalog.exists():
+            paths.append(local_catalog)
+
+        records_by_id: dict[str, dict] = {}
+        for path in paths:
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(payload, list):
+                continue
+            for item in payload:
+                if isinstance(item, dict) and item.get("work_id"):
+                    records_by_id[str(item["work_id"])] = item
+        return list(records_by_id.values())
 
     @property
     def average_document_length(self) -> float:

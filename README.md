@@ -4,12 +4,15 @@ Assistant littéraire local qui recherche dans des romans, répond avec des
 citations vérifiables et affiche un graphe lorsque la question concerne des
 personnages ou leurs relations.
 
-Toutes les données et la génération restent sur la machine : aucune API
-externe n'est nécessaire. Ollama exécute le modèle de langage localement.
+Les romans installés et la génération restent sur la machine. Ollama exécute
+le modèle de langage localement ; l'API publique Gutendex sert uniquement à
+chercher et télécharger des ebooks du domaine public.
 
 ## Fonctionnalités du MVP
 
 - ingestion de romans EPUB et nettoyage du texte ;
+- catalogue Gutendex avec recherche par titre, auteur et langue ;
+- téléchargement et indexation en un clic d'ebooks Project Gutenberg ;
 - découpage par chapitre et en passages citables ;
 - recherche locale BM25 dans un ou plusieurs romans ;
 - expansion locale des questions françaises vers les textes anglais ;
@@ -53,6 +56,9 @@ streamlit run app\streamlit_app.py
 
 Streamlit ouvre normalement l'application sur `http://localhost:8501`.
 Choisissez les romans dans la barre latérale, puis posez une question.
+Le panneau **Ajouter un livre** permet de chercher un titre ou un auteur,
+de choisir une langue, puis de télécharger et indexer le roman sans modifier
+le manifeste Git du projet.
 
 Exemples :
 
@@ -75,6 +81,17 @@ Ou directement avec Python :
 python -m rag.cli "Pourquoi Josef K. est-il arrêté ?" --work the_trial
 ```
 
+Le catalogue est également disponible en ligne de commande :
+
+```powershell
+literary-library search "Dostoyevsky" --language en
+literary-library import 2554
+```
+
+Les livres ajoutés sont enregistrés dans `data/library/installed_books.json`,
+et leurs fichiers générés restent sous `data/raw` et `data/processed`. Ces
+données locales sont ignorées par Git.
+
 ## Réindexer les EPUB
 
 Les EPUB sont décrits dans le manifeste et placés dans `data/raw`.
@@ -94,7 +111,8 @@ Pour ajouter une œuvre :
 ## Architecture
 
 ```text
-EPUB
+API Gutendex ou EPUB local
+  -> téléchargement local sécurisé
   -> texte nettoyé
   -> chapitres et passages JSON
   -> index lexical local
@@ -110,6 +128,8 @@ question
 Les modules principaux sont :
 
 - `src/ingestion` : extraction, nettoyage et découpage ;
+- `src/catalog/gutendex.py` : recherche et téléchargement via Gutendex ;
+- `src/catalog/library.py` : installation et indexation de la bibliothèque locale ;
 - `src/rag/local_index.py` : index BM25 sans service externe ;
 - `src/retrieval/query_analyzer.py` : classification et réécriture multilingue ;
 - `src/retrieval/hybrid_retriever.py` : orchestration BM25 + Neo4j ;
@@ -153,6 +173,9 @@ son `work_id`, son passage de preuve et la citation extraite.
 
 Ce MVP utilise des passages d'environ 600 mots et un index lexical enrichi par
 une expansion multilingue locale.
+Le catalogue distant est limité aux ebooks disponibles légalement dans Project
+Gutenberg ; les titres encore protégés peuvent apparaître dans d'autres
+catalogues, mais leur texte intégral ne peut pas être téléchargé automatiquement.
 L'étape suivante consiste à ajouter des embeddings locaux pour une recherche
 sémantique plus fine, puis à rendre le graphe Neo4j persistant et entièrement
 traçable jusqu'aux passages sources.
