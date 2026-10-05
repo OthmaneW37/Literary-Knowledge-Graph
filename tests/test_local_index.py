@@ -27,9 +27,12 @@ def make_index(tmp_path):
 def test_tokenize_normalizes_accents() -> None:
     assert "pere" in tokenize("Le père de Grégoire")
     assert "gregoire" in tokenize("Le père de Grégoire")
+    assert tokenize("arrests arrested") == ["arrest", "arrest"]
 
 
 def test_search_finds_and_filters_work(tmp_path) -> None:
     index = make_index(tmp_path)
     assert index.search("Josef arrested")[0].chunk_id == "trial_1"
     assert index.search("Gregor", work_ids=["trial"]) == []
+    assert index.search("Who arrests Josef?")[0].chunk_id == "trial_1"
+    assert index.get_neighbors("trial_1") == []

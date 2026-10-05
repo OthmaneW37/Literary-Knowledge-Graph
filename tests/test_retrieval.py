@@ -11,6 +11,7 @@ from retrieval import (
     QueryAnalysis,
     QueryAnalyzer,
 )
+from retrieval.query_analyzer import expand_bilingual_query
 from extraction.entity_resolution import EntityCandidate
 from graph.load_neo4j import extraction_matches_chunk, match_existing_entity
 
@@ -48,6 +49,33 @@ def test_heuristic_analyzer_extracts_named_character() -> None:
     assert "Gregor Samsa" in analysis.entities
 
 
+def test_heuristic_analyzer_removes_english_possessive_from_character_name():
+    analysis = QueryAnalyzer()._heuristic_analysis("What is Josef K.’s profession?")
+    assert analysis.entities == ["Josef K"]
+
+
+def test_default_analyzer_is_fast_and_expands_french_without_llm(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "retrieval.query_analyzer.ollama.chat",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("LLM should not be called")),
+    )
+    analysis = QueryAnalyzer().analyze(
+        "Pourquoi Gregor cache sa transformation à sa famille ?"
+    )
+
+    assert "why" in analysis.rewritten_query
+    assert "family" in analysis.rewritten_query
+    assert "Gregor" in analysis.rewritten_query
+    assert analysis.entities == ["Gregor"]
+
+
+def test_bilingual_expansion_also_supports_english_question_on_french_text() -> None:
+    expanded = expand_bilingual_query("Why does the father feel guilt?")
+    assert "pourquoi" in expanded
+    assert "pere" in expanded
+    assert "culpabilite" in expanded
+
+
 def test_hybrid_retriever_calls_graph_for_relationship() -> None:
     class Analyzer:
         def analyze(self, question, history=None):
@@ -60,7 +88,7 @@ def test_hybrid_retriever_calls_graph_for_relationship() -> None:
             )
 
     class Lexical:
-        def retrieve(self, query, work_ids=None, top_k=6):
+        def retrieve(self, query, work_ids=None, top_k=6, max_chapter=None):
             assert query == "Gregor father relationship"
             return []
 
@@ -82,6 +110,89 @@ def test_hybrid_retriever_calls_graph_for_relationship() -> None:
     assert result.graph.relationships[0].relation == "PARENT_OF"
 
 
+def test_hybrid_retriever_fuses_lexical_and_semantic_rankings() -> None:
+    from rag.models import Passage
+
+    passages = {
+        chunk_id: Passage("work", "Work", 1, chunk_id, chunk_id)
+        for chunk_id in ("lexical", "shared", "semantic")
+    }
+
+    class Analyzer:
+        def analyze(self, question, history=None):
+            return QueryAnalysis(rewritten_query=question)
+
+    class Lexical:
+        def retrieve(self, query, work_ids=None, top_k=6, max_chapter=None):
+            return [passages["lexical"], passages["shared"]]
+
+    class Semantic:
+        def retrieve(self, query, work_ids=None, top_k=6, max_chapter=None):
+            return [passages["semantic"], passages["shared"]]
+
+    result = HybridRetriever(
+        Lexical(), Analyzer(), semantic=Semantic(), min_semantic_score=0
+    ).retrieve("question", top_k=3)
+
+    assert result.passages[0].chunk_id == "shared"
+    assert {passage.chunk_id for passage in result.passages} == set(passages)
+
+
+def test_hybrid_retriever_rejects_low_signal_unrelated_question() -> None:
+    from rag.models import Passage
+
+    class Analyzer:
+        def analyze(self, question, history=None):
+            return QueryAnalysis(rewritten_query=question)
+
+    class Lexical:
+        def retrieve(self, query, work_ids=None, top_k=6, max_chapter=None):
+            return [Passage("work", "Book", 1, "irrelevant", "A long literary scene about an argument.", 5.0)]
+
+    class Semantic:
+        def retrieve(self, query, work_ids=None, top_k=6, max_chapter=None):
+            return [Passage("work", "Book", 1, "irrelevant", "An argument.", 0.29)]
+
+    result = HybridRetriever(
+        Lexical(), Analyzer(), semantic=Semantic(),
+        min_semantic_score=0.40, min_lexical_coverage=0.30,
+    ).retrieve("purple spaceship argument novel", top_k=3)
+
+    assert result.passages == []
+
+
+def test_hybrid_retriever_rejects_named_character_absent_from_selected_book() -> None:
+    from types import SimpleNamespace
+    from rag.models import Passage, Work
+
+    passage = Passage("kafka", "The Trial", 1, "kafka_ch01_p001", "Josef K. was arrested one morning.")
+    index = SimpleNamespace(
+        works={"kafka": Work("kafka", "The Trial", "Franz Kafka", "en")},
+        passages=[passage],
+    )
+
+    class Analyzer:
+        def analyze(self, question, history=None):
+            return QueryAnalysis(entities=["Raskolnikov"], rewritten_query=question)
+
+    class Lexical:
+        def __init__(self):
+            self.index = index
+
+        def retrieve(self, query, work_ids=None, top_k=6, max_chapter=None):
+            return []
+
+    class Semantic:
+        def retrieve(self, query, work_ids=None, top_k=6, max_chapter=None):
+            return [Passage("kafka", "The Trial", 1, "kafka_ch01_p001", passage.text, 0.48)]
+
+    result = HybridRetriever(
+        Lexical(), Analyzer(), semantic=Semantic(), min_semantic_score=0.4
+    ).retrieve("Why does Raskolnikov commit the murder?", work_ids=["kafka"])
+
+    assert result.passages == []
+
+
 def test_graph_retriever_reads_canonical_schema() -> None:
     class Session:
         def __enter__(self):
@@ -92,6 +203,7 @@ def test_graph_retriever_reads_canonical_schema() -> None:
 
         def run(self, cypher, **parameters):
             assert "source.canonical_name" in cypher
+            assert "entity CONTAINS" in cypher
             assert parameters["entities"] == ["gregor"]
             return [
                 {
@@ -112,6 +224,13 @@ def test_graph_retriever_reads_canonical_schema() -> None:
     assert result.available is True
     assert result.relationships[0].target == "Gregor Samsa"
     assert result.evidence_chunk_ids == ["meta_14"]
+
+
+def test_graph_retriever_stays_off_unless_enabled() -> None:
+    retriever = GraphRetriever(password="configured-but-disabled", enabled=False)
+    result = retriever.retrieve(["Gregor"])
+
+    assert result.available is False
 
 
 def test_relation_endpoint_matches_existing_character_only() -> None:

@@ -4,27 +4,34 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "literary-graph-rag"
-version = "0.1.0"
+version = "0.2.0"
 description = "Knowledge graph companion for literary analysis"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "ebooklib",
     "beautifulsoup4",
+    "fastapi>=0.115",
     "graphviz>=0.20",
     "httpx>=0.27",
     "neo4j>=5.20",
+    "numpy>=1.26",
     "ollama>=0.4",
+    "pypdf>=5.0",
+    "python-docx>=1.1",
+    "python-multipart>=0.0.9",
     "python-dotenv>=1.0",
-    "streamlit>=1.40"
+    "uvicorn[standard]>=0.30"
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+legacy-ui = ["streamlit>=1.40"]
 
 [project.scripts]
 literary-chat = "rag.cli:main"
 literary-library = "catalog.cli:main"
+literary-chat-server = "literary_chat.api_server:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from .models import Passage, Work
+from storage.local import read_json
 
 
 TOKEN_PATTERN = re.compile(r"[^\W_]+(?:['’][^\W_]+)?", flags=re.UNICODE)
@@ -32,16 +33,30 @@ def normalize_text(value: str) -> str:
 
 
 def tokenize(value: str) -> list[str]:
+    # Keep significant initials such as "K." while still ignoring single-letter noise.
+    value = re.sub(r"\b([A-Z])\.(?=\W|$)", lambda match: f" initial{match[1].lower()} ", value)
     tokens = TOKEN_PATTERN.findall(normalize_text(value))
-    return [token.replace("’", "'") for token in tokens if len(token) > 1 and token not in STOP_WORDS]
+    normalized_tokens: list[str] = []
+    for token in tokens:
+        token = token.replace("’", "'")
+        if token.endswith("'s"):
+            token = token[:-2]
+        if len(token) > 5 and token.endswith("ing"):
+            token = token[:-3]
+        elif len(token) > 4 and token.endswith("ed"):
+            token = token[:-2]
+        elif len(token) > 4 and token.endswith("s") and not token.endswith("ss"):
+            token = token[:-1]
+        if len(token) > 1 and token not in STOP_WORDS:
+            normalized_tokens.append(token)
+    return normalized_tokens
 
 
 class LocalLiteraryIndex:
-    """Small in-memory BM25 index over the locally processed novels.
+    """In-memory BM25 index over locally processed novels.
 
-    The initial corpus is intentionally small, so this requires no database and
-    makes the MVP usable immediately. It can later be complemented by vector
-    embeddings without changing the public search API.
+    An inverted term index avoids scanning the entire library for each query.
+    The public search API can later be complemented by semantic retrieval.
     """
 
     def __init__(
@@ -57,6 +72,8 @@ class LocalLiteraryIndex:
         self._document_frequencies: Counter[str] = Counter()
         self._document_lengths: list[int] = []
         self._passages_by_id: dict[str, Passage] = {}
+        self._passage_positions: dict[str, int] = {}
+        self._postings: defaultdict[str, list[int]] = defaultdict(list)
         self._load()
 
     def _load(self) -> None:
@@ -80,16 +97,26 @@ class LocalLiteraryIndex:
                     chapter=chunk.get("chapter", "?"),
                     chunk_id=chunk["chunk_id"],
                     text=chunk["text"],
+                    author=work.author,
+                    language=work.language,
+                    section=str(chunk.get("section", "")),
+                    page=chunk.get("page"),
+                    pages=tuple(chunk.get("pages", [])),
+                    chunk_index=int(chunk.get("chunk_index", 0) or 0),
+                    start_char=int(chunk.get("start_char", 0) or 0),
+                    end_char=int(chunk.get("end_char", 0) or 0),
                 )
                 self.passages.append(passage)
                 self._passages_by_id[passage.chunk_id] = passage
+                self._passage_positions[passage.chunk_id] = len(self.passages) - 1
                 frequencies = Counter(tokenize(passage.text))
                 self._term_frequencies.append(frequencies)
                 self._document_lengths.append(sum(frequencies.values()))
                 self._document_frequencies.update(frequencies.keys())
+                passage_index = len(self.passages) - 1
+                for term in frequencies:
+                    self._postings[term].append(passage_index)
 
-        if not self.passages:
-            raise ValueError("No chunk files found. Run the ingestion pipeline first.")
 
     def _load_manifest_records(self) -> list[dict]:
         """Merge bundled works with books installed in the local library."""
@@ -109,7 +136,8 @@ class LocalLiteraryIndex:
             for item in payload:
                 if isinstance(item, dict) and item.get("work_id"):
                     records_by_id[str(item["work_id"])] = item
-        return list(records_by_id.values())
+        archived = set(read_json(self.manifest_path.parent.parent / "library/archived_books.json", []))
+        return [record for work_id, record in records_by_id.items() if work_id not in archived]
 
     @property
     def average_document_length(self) -> float:
@@ -118,26 +146,54 @@ class LocalLiteraryIndex:
     def get_passage(self, chunk_id: str) -> Passage | None:
         return self._passages_by_id.get(chunk_id)
 
+    def get_neighbors(self, chunk_id: str, radius: int = 1) -> list[Passage]:
+        """Return adjacent passages from the same work in narrative order."""
+        position = self._passage_positions.get(chunk_id)
+        if position is None or radius < 1:
+            return []
+        passage = self.passages[position]
+        start = max(0, position - radius)
+        end = min(len(self.passages), position + radius + 1)
+        return [
+            candidate
+            for candidate in self.passages[start:end]
+            if candidate.work_id == passage.work_id and candidate.chunk_id != chunk_id
+        ]
+
     def search(
         self,
         query: str,
         work_ids: list[str] | None = None,
         top_k: int = 6,
+        max_chapter: int | None = None,
     ) -> list[Passage]:
         query_tokens = tokenize(query)
         if not query_tokens:
             return []
 
-        selected = set(work_ids or self.works.keys())
+        selected = set(self.works if work_ids is None else work_ids)
         total_documents = len(self.passages)
         average_length = self.average_document_length
         query_counts = Counter(query_tokens)
+        beginning_query = bool({"beginn", "start", "open", "debut"} & set(query_tokens))
         scores: list[tuple[float, int]] = []
         k1, b = 1.5, 0.75
 
-        for index, passage in enumerate(self.passages):
+        candidate_indices = {
+            passage_index
+            for term in query_counts
+            for passage_index in self._postings.get(term, [])
+        }
+        for index in candidate_indices:
+            passage = self.passages[index]
             if passage.work_id not in selected:
                 continue
+            if max_chapter is not None:
+                try:
+                    if int(passage.chapter) > max_chapter:
+                        continue
+                except (TypeError, ValueError):
+                    continue
             frequencies = self._term_frequencies[index]
             document_length = self._document_lengths[index]
             score = 0.0
@@ -158,10 +214,16 @@ class LocalLiteraryIndex:
             normalized_passage = normalize_text(passage.text)
             if len(normalized_query) > 8 and normalized_query in normalized_passage:
                 score += 8.0
+            try:
+                chapter_number = int(passage.chapter)
+            except (TypeError, ValueError):
+                chapter_number = 0
+            if beginning_query and chapter_number == 1:
+                score += 3.0
             if score > 0:
                 scores.append((score, index))
 
-        scores.sort(key=lambda item: item[0], reverse=True)
+        scores.sort(key=lambda item: (-item[0], item[1]))
         return [
             Passage(**{**self.passages[index].__dict__, "score": round(score, 4)})
             for score, index in scores[:top_k]

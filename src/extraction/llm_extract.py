@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import Any
 
 import ollama
+from dotenv import load_dotenv
 
 
-MODEL_NAME = "qwen2.5:7b-instruct"
+load_dotenv()
+MODEL_NAME = os.getenv("OLLAMA_MODEL", "qwen3.5:4b-q4_K_M")
 
 MAX_MENTION_WORDS = 4
 MAX_CONTEXT_CHARS = 300
@@ -540,6 +543,8 @@ def extract_chunk_llm(chunk_text: str) -> dict[str, Any]:
                 "temperature": 0,
             },
             format="json",
+            think=False,
+            keep_alive=os.getenv("OLLAMA_KEEP_ALIVE", "15m"),
         )
     except Exception as exc:
         print(f"Ollama error: {exc}")

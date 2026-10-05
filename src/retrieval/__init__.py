@@ -20,6 +20,8 @@ from .query_analyzer import (
     QueryAnalyzer,
 )
 
+from .semantic_retriever import SemanticRetriever
+
 
 __all__ = [
     "GraphRelationship",
@@ -30,4 +32,5 @@ __all__ = [
     "QueryAnalysis",
     "QueryAnalyzer",
     "RetrievalResult",
+    "SemanticRetriever",
 ]

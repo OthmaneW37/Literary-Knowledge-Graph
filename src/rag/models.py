@@ -20,10 +20,21 @@ class Passage:
     chunk_id: str
     text: str
     score: float = 0.0
+    author: str = ""
+    language: str = ""
+    section: str = ""
+    page: int | str | None = None
+    pages: tuple[int, ...] = ()
+    chunk_index: int = 0
+    start_char: int = 0
+    end_char: int = 0
 
     @property
     def citation_label(self) -> str:
-        return f"{self.work_title}, chapitre {self.chapter} — {self.chunk_id}"
+        location = f"chapitre {self.chapter}"
+        if self.page:
+            location += f", page {self.page}"
+        return f"{self.work_title}, {location} — {self.chunk_id}"
 
 
 @dataclass(frozen=True)
@@ -60,3 +71,5 @@ class Answer:
     visualization: Visualization = field(default_factory=Visualization)
     used_model: bool = True
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
+    retrieval_ms: int = 0
+    generation_ms: int = 0

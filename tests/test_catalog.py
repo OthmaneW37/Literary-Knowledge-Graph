@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
 from catalog import CatalogBook, DownloadedBook, GutendexClient, LibraryImporter
 from rag.local_index import LocalLiteraryIndex
@@ -86,3 +87,66 @@ def test_install_book_and_load_it_into_local_index(tmp_path) -> None:
     assert index.search("Victor creature", work_ids=["gutenberg_84"])
     records = json.loads((data_dir / "library" / "installed_books.json").read_text(encoding="utf-8"))
     assert records[0]["provider_id"] == 84
+
+
+def test_upload_text_book_and_load_it_into_local_index(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    annotations = data_dir / "annotations"
+    annotations.mkdir(parents=True)
+    manifest_path = annotations / "work_manifest.json"
+    manifest_path.write_text("[]", encoding="utf-8")
+    content = ("Jean Valjean protège Cosette et fuit Javert. " * 150).encode("utf-8")
+
+    result = LibraryImporter(data_dir).install_upload(
+        content=content,
+        filename="les-miserables.txt",
+        title="Les Misérables",
+        author="Victor Hugo",
+        language="fr",
+    )
+    index = LocalLiteraryIndex(manifest_path, data_dir / "processed")
+
+    assert result.work_id.startswith("upload_")
+    assert index.works[result.work_id].author == "Victor Hugo"
+    assert index.search("Valjean Cosette", work_ids=[result.work_id])
+
+
+def test_upload_rejects_unsupported_or_empty_files(tmp_path) -> None:
+    importer = LibraryImporter(tmp_path / "data")
+    with pytest.raises(ValueError, match="vide"):
+        importer.install_upload(b"", "book.txt", "Book")
+
+
+def test_upload_docx_document(tmp_path) -> None:
+    from docx import Document
+    from io import BytesIO
+
+    document = Document()
+    document.add_paragraph("Victor Frankenstein studied the natural sciences. " * 30)
+    content = BytesIO()
+    document.save(content)
+    data_dir = tmp_path / "data"
+    (data_dir / "annotations").mkdir(parents=True)
+    (data_dir / "annotations" / "work_manifest.json").write_text("[]", encoding="utf-8")
+
+    result = LibraryImporter(data_dir).install_upload(
+        content.getvalue(), "frankenstein.docx", "Frankenstein", "Mary Shelley"
+    )
+
+    assert result.work_id.startswith("upload_")
+    chunks = json.loads((data_dir / "processed" / f"{result.work_id}.chunks.json").read_text(encoding="utf-8"))
+    assert chunks
+
+
+def test_pdf_with_no_text_reports_likely_scan() -> None:
+    from io import BytesIO
+    from pypdf import PdfWriter
+    from ingestion.loaders import DocumentLoadError, DocumentLoader
+
+    output = BytesIO()
+    writer = PdfWriter()
+    writer.add_blank_page(width=612, height=792)
+    writer.write(output)
+
+    with pytest.raises(DocumentLoadError, match="scanné"):
+        DocumentLoader().load("scanned.pdf", output.getvalue())

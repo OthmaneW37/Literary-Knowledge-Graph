@@ -32,10 +32,12 @@ class LexicalRetriever:
         query: str,
         work_ids: list[str] | None = None,
         top_k: int = 6,
+        max_chapter: int | None = None,
     ) -> list[Passage]:
 
         return self.index.search(
             query,
             work_ids=work_ids,
             top_k=top_k,
+            max_chapter=max_chapter,
         )

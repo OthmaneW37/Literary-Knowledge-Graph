@@ -1,0 +1,7 @@
+{
+  "q06": [{"work_id": "metamorphosis", "contains": "Samsa was a travelling salesman"}],
+  "q07": [{"work_id": "metamorphosis", "contains": "transformed in his bed into a horrible vermin"}],
+  "q08": [{"work_id": "the_trial", "contains": "he knew he had done nothing wrong"}],
+  "q09": [{"work_id": "the_trial", "contains": "I am the chief clerk in a large bank"}],
+  "q10": [{"work_id": "metamorphosis", "contains": "Samsa was a travelling salesman"}]
+}

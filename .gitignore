@@ -33,3 +33,5 @@ data/library/
 dist/
 build/
 *.egg-info/
+/web/node_modules/
+/web/dist/

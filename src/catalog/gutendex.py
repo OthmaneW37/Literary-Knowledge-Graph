@@ -71,7 +71,7 @@ class GutendexClient:
     def get_book(self, provider_id: int) -> CatalogBook:
         if provider_id <= 0:
             raise ValueError("L'identifiant Gutenberg doit être positif.")
-        return self._parse_book(self._get_json(f"/books/{provider_id}"))
+        return self._parse_book(self._get_json(f"/books/{provider_id}/"))
 
     def download(self, book: CatalogBook) -> DownloadedBook:
         mime_type, suffix, url = self._select_format(book.formats)

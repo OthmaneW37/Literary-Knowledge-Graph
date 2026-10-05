@@ -23,5 +23,23 @@
     "id": "q05",
     "question": "Comment la bureaucratie influence-t-elle The Trial ?",
     "expected_work": "the_trial"
+  },
+  {
+    "id": "q06", "question": "Who is Gregor Samsa?", "expected_work": "metamorphosis"
+  },
+  {
+    "id": "q07", "question": "What happens to Gregor at the beginning?", "expected_work": "metamorphosis"
+  },
+  {
+    "id": "q08", "question": "Why is Josef K. arrested?", "expected_work": "the_trial"
+  },
+  {
+    "id": "q09", "question": "What is Josef K.'s profession?", "expected_work": "the_trial"
+  },
+  {
+    "id": "q10", "question": "Quel métier exerce Gregor Samsa ?", "expected_work": "metamorphosis"
+  },
+  {
+    "id": "q11", "question": "What motivates Raskolnikov to commit the murder?", "expect_refusal": true
   }
 ]

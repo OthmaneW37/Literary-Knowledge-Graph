@@ -3,11 +3,54 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from typing import Any
 
 import ollama
+
+
+# Frequent concepts in literary questions. Expanding both directions keeps
+# lexical retrieval useful when the question and the edition use different
+# languages, without paying for a second LLM call on every request.
+BILINGUAL_TERMS = {
+    "why": "pourquoi", "how": "comment", "who": "qui", "when": "quand",
+    "father": "pere", "mother": "mere", "parents": "parents",
+    "brother": "frere", "sister": "soeur", "son": "fils", "daughter": "fille",
+    "family": "famille", "friend": "ami", "enemy": "ennemi",
+    "love": "amour", "hate": "haine", "death": "mort", "murder": "meurtre",
+    "kill": "tuer", "killed": "tue", "hide": "cacher", "hidden": "cache",
+    "fear": "peur", "guilt": "culpabilite", "crime": "crime",
+    "punishment": "chatiment", "justice": "justice", "freedom": "liberte",
+    "power": "pouvoir", "authority": "autorite", "society": "societe",
+    "loneliness": "solitude", "alienation": "alienation", "identity": "identite",
+    "transformation": "transformation", "dream": "reve", "symbol": "symbole",
+    "theme": "theme", "meaning": "signification", "relationship": "relation",
+    "character": "personnage", "chapter": "chapitre", "scene": "scene",
+    "beginning": "debut", "ending": "fin", "before": "avant", "after": "apres",
+    "change": "changer", "become": "devenir", "think": "penser", "feel": "sentir",
+    "say": "dire", "tell": "raconter", "leave": "quitter", "return": "retourner",
+    "arrest": "arreter", "trial": "proces", "prison": "prison",
+}
+
+
+def _normalized_word(value: str) -> str:
+    value = unicodedata.normalize("NFKD", value.casefold())
+    return "".join(character for character in value if not unicodedata.combining(character))
+
+
+def expand_bilingual_query(question: str) -> str:
+    """Append useful French/English equivalents while preserving the question."""
+    reverse = {french: english for english, french in BILINGUAL_TERMS.items()}
+    translations: list[str] = []
+    for raw_word in re.findall(r"[^\W_]+", question, flags=re.UNICODE):
+        word = _normalized_word(raw_word)
+        translated = BILINGUAL_TERMS.get(word) or reverse.get(word)
+        if translated and translated not in translations:
+            translations.append(translated)
+    return " ".join([question, *translations]).strip()
 
 
 @dataclass
@@ -167,6 +210,12 @@ class QueryAnalyzer:
         "Analyse",
         "Comment",
         "Compare",
+        "Find",
+        "Tell",
+        "Describe",
+        "Summarize",
+        "Summarise",
+        "Search",
         "Explique",
         "Montre",
         "Pourquoi",
@@ -182,20 +231,34 @@ class QueryAnalyzer:
         "Which",
         "Who",
         "Why",
+        "How", "Is", "Are", "Does", "Do", "Can", "Could", "Explain",
+        "I", "The", "In", "Give", "List", "Please", "Est", "Le", "La", "Les",
+        "Je", "Résume", "Resume", "Donne", "Décris", "Liste", "Peux",
     }
 
-    def __init__(self, model: str = "qwen2.5:7b-instruct") -> None:
+    def __init__(
+        self,
+        model: str = "qwen3.5:4b-q4_K_M",
+        mode: str | None = None,
+        keep_alive: str = "15m",
+        provider: Any | None = None,
+    ) -> None:
         self.model = model
+        self.mode = (mode or os.getenv("RAG_QUERY_ANALYSIS", "heuristic")).strip().casefold()
+        self.keep_alive = keep_alive
+        self.provider = provider
 
     def analyze(
         self,
         question: str,
         history: list[dict[str, str]] | None = None,
     ) -> QueryAnalysis:
-        try:
-            return self._analyze_with_llm(question, history)
-        except Exception:
-            return self._heuristic_analysis(question, history)
+        if self.mode == "llm":
+            try:
+                return self._analyze_with_llm(question, history)
+            except Exception:
+                pass
+        return self._heuristic_analysis(question, history)
 
     def _analyze_with_llm(
         self,
@@ -265,7 +328,8 @@ Question :
 {question}
 """.strip()
 
-        response = ollama.chat(
+        chat = self.provider.chat if self.provider else ollama.chat
+        response = chat(
             model=self.model,
             messages=[
                 {
@@ -274,10 +338,13 @@ Question :
                 }
             ],
             format="json",
+            think=False,
             options={
                 "temperature": 0,
-                "num_predict": 300,
+                "num_ctx": 2048,
+                "num_predict": 160,
             },
+            keep_alive=self.keep_alive,
         )
 
         raw = str(response["message"]["content"]).strip()
@@ -319,12 +386,9 @@ Question :
         elif words & self.THEME_HINTS:
             question_type = "theme"
 
-        entity_context = " ".join(
-            [
-                *(item.get("content", "") for item in (history or [])[-2:]),
-                question,
-            ]
-        )
+        pronouns = {"il", "elle", "ils", "elles", "lui", "he", "she", "they", "him", "her"}
+        previous_questions = [item.get("content", "") for item in (history or [])[-6:] if item.get("role") == "user"]
+        entity_context = " ".join([*previous_questions[-1:], question]) if words & pronouns else question
         candidates = re.findall(
             r"(?<![\w])(?:[A-ZÀ-ÖØ-Þ][\wÀ-ÖØ-öø-ÿ'’-]*|[A-Z]\.)(?:\s+(?:[A-ZÀ-ÖØ-Þ][\wÀ-ÖØ-öø-ÿ'’-]*|[A-Z]\.))*",
             entity_context,
@@ -332,10 +396,19 @@ Question :
         entities: list[str] = []
         for candidate in candidates:
             cleaned = candidate.strip().rstrip(".")
+            cleaned = re.sub(r"[’']s$", "", cleaned, flags=re.IGNORECASE)
+            parts = cleaned.split()
+            if parts and parts[0] in self.ENTITY_STOP_WORDS:
+                cleaned = " ".join(parts[1:])
             if cleaned in self.ENTITY_STOP_WORDS or not cleaned:
                 continue
             if cleaned not in entities:
                 entities.append(cleaned)
+
+        rewritten_query = expand_bilingual_query(question)
+        pronouns = {"il", "elle", "ils", "elles", "lui", "he", "she", "they", "him", "her"}
+        if words & pronouns and entities:
+            rewritten_query = f"{rewritten_query} {' '.join(entities[-3:])}"
 
         return QueryAnalysis(
             question_type=question_type,
@@ -343,5 +416,5 @@ Question :
             themes=[],
             use_lexical=True,
             use_graph=use_graph,
-            rewritten_query=question,
+            rewritten_query=rewritten_query,
         )
