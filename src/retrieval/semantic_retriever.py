@@ -11,6 +11,7 @@ import ollama
 
 from rag.local_index import LocalLiteraryIndex
 from rag.models import Passage
+from .spoiler_policy import SpoilerPolicy
 
 
 LOGGER = logging.getLogger(__name__)
@@ -196,10 +197,7 @@ class SemanticRetriever:
             position
             for position, passage in enumerate(self.index.passages)
             if passage.work_id in selected_works
-            and (
-                max_chapter is None
-                or (str(passage.chapter).isdigit() and int(passage.chapter) <= max_chapter)
-            )
+            and SpoilerPolicy.allows(passage.chapter, max_chapter)
         ]
         eligible.sort(key=lambda position: (-float(scores[position]), position))
         return [

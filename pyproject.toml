@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "literary-graph-rag"
+name = "narrativelens"
 version = "0.2.0"
 description = "Knowledge graph companion for literary analysis"
 readme = "README.md"
@@ -27,11 +27,17 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 legacy-ui = ["streamlit>=1.40"]
+ocr = ["pytesseract>=0.3.13", "Pillow>=10.0"]
+visual = ["sentence-transformers>=3.0", "Pillow>=10.0"]
+orchestration = ["langgraph>=1,<2", "langchain-core>=1,<2"]
+mcp = ["mcp>=1.0"]
+training = ["sentence-transformers>=3.0", "torch>=2.2"]
 
 [project.scripts]
 literary-chat = "rag.cli:main"
 literary-library = "catalog.cli:main"
 literary-chat-server = "literary_chat.api_server:main"
+narrativelens-mcp = "mcp_server.server:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

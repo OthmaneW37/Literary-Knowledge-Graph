@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field, replace
 
@@ -17,6 +18,7 @@ from .graph_retriever import (
 from .lexical_retriever import LexicalRetriever
 from .semantic_retriever import SemanticRetriever
 from .reranker import diversify
+from .spoiler_policy import SpoilerPolicy
 
 from .query_analyzer import (
     QueryAnalyzer,
@@ -64,6 +66,7 @@ class HybridRetriever:
         min_semantic_score: float = 0.40,
         min_lexical_coverage: float = 0.30,
         rerank: bool = False,
+        learned_reranker=None,
     ) -> None:
 
         self.lexical = lexical
@@ -73,6 +76,7 @@ class HybridRetriever:
         self.min_semantic_score = min_semantic_score
         self.min_lexical_coverage = min_lexical_coverage
         self.rerank = rerank
+        self.learned_reranker = learned_reranker
 
     def retrieve(
         self,
@@ -144,7 +148,27 @@ class HybridRetriever:
                 top_k * 2 if self.rerank else top_k,
             )
             if self.rerank:
-                passages = diversify(passages, top_k)
+                reranker = self.learned_reranker
+                provider = os.getenv("RERANKER_PROVIDER", "diversify").casefold()
+                if reranker is None and provider in {"cross_encoder", "trained"}:
+                    try:
+                        if provider == "trained":
+                            from reranking.trained import TrainedReranker
+                            reranker = TrainedReranker(os.getenv("RERANKER_PATH", "models/reranker"))
+                        else:
+                            from reranking.cross_encoder import CrossEncoderReranker
+                            reranker = CrossEncoderReranker(os.getenv("RERANKER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"))
+                        self.learned_reranker = reranker
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("Learned reranker unavailable; using local diversification: %s", exc)
+                if reranker is not None:
+                    try:
+                        passages = reranker.rerank(question, passages, top_k)
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("Reranker failed; using local diversification: %s", exc)
+                        passages = diversify(passages, top_k)
+                else:
+                    passages = diversify(passages, top_k)
             if index and re.search(r"\b(profession|occupation|job|métier|metier|employment)\b", question, re.I):
                 # Job descriptions are frequently in quoted introductions ("I am a...")
                 # rather than sentences repeating a full character name.
@@ -174,7 +198,7 @@ class HybridRetriever:
                     for term in alias_terms if len(term) >= 3
                 ]
                 candidates = [p for p in index.passages if p.work_id in relevant_works
-                              and (max_chapter is None or (str(p.chapter).isdigit() and int(p.chapter) <= max_chapter))
+                              and SpoilerPolicy.allows(p.chapter, max_chapter)
                               and (any(pattern.search(p.text) for pattern in declarations + surname_declarations)
                                    or (any(pattern.search(p.text) for pattern in alias_patterns)
                                        and re.search(r"\b(?:I am|you are|he is|she is|je suis)\s+(?:a|an|the|un|une|le|la)\s+", p.text, re.I)))]
@@ -200,7 +224,7 @@ class HybridRetriever:
                 introductions = [
                     p for p in index.passages
                     if p.work_id in relevant_works
-                    and (max_chapter is None or (str(p.chapter).isdigit() and int(p.chapter) <= max_chapter))
+                    and SpoilerPolicy.allows(p.chapter, max_chapter)
                     and any(re.search(rf"\b{re.escape(term)}\b", p.text, re.I) for term in aliases if len(term) >= 2)
                 ]
                 introductions.sort(key=lambda p: (p.work_id, p.chapter if isinstance(p.chapter, int) else 999999, p.chunk_index))
@@ -212,7 +236,7 @@ class HybridRetriever:
                 openings = []
                 for work_id in relevant_works:
                     opening = next((p for p in index.passages if p.work_id == work_id and p.chapter == 1), None)
-                    if opening and (max_chapter is None or max_chapter >= 1):
+                    if opening and SpoilerPolicy.allows(opening.chapter, max_chapter):
                         openings.append(opening)
                 opening_ids = {p.chunk_id for p in openings}
                 passages = (openings + [p for p in passages if p.chunk_id not in opening_ids])[:top_k]

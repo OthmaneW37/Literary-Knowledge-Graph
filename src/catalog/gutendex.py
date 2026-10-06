@@ -77,17 +77,31 @@ class GutendexClient:
         mime_type, suffix, url = self._select_format(book.formats)
         self._validate_download_url(url)
         try:
-            response = self.client.get(url)
-            response.raise_for_status()
-        except httpx.HTTPError as exc:
+            for _ in range(6):
+                # Validate each redirect BEFORE sending a request to its target.
+                self._validate_download_url(url)
+                with self.client.stream("GET", url, follow_redirects=False) as response:
+                    if response.is_redirect:
+                        url = str(response.url.join(response.headers["location"]))
+                        continue
+                    response.raise_for_status()
+                    if int(response.headers.get("content-length", 0) or 0) > MAX_BOOK_BYTES:
+                        raise CatalogError("Le fichier dépasse la limite de 25 Mo.")
+                    chunks, size = [], 0
+                    for chunk in response.iter_bytes():
+                        size += len(chunk)
+                        if size > MAX_BOOK_BYTES:
+                            raise CatalogError("Le fichier dépasse la limite de 25 Mo.")
+                        chunks.append(chunk)
+                    content = b"".join(chunks)
+                    if not content:
+                        raise CatalogError("Le fichier téléchargé est vide.")
+                    if suffix == ".epub" and not content.startswith(b"PK"):
+                        raise CatalogError("Le serveur n’a pas renvoyé un EPUB valide.")
+                    return DownloadedBook(content, mime_type, suffix, str(response.url))
+            raise CatalogError("Le téléchargement contient trop de redirections.")
+        except (httpx.HTTPError, ValueError, KeyError) as exc:
             raise CatalogError(f"Téléchargement impossible pour « {book.title} ».") from exc
-        content_length = int(response.headers.get("content-length", 0) or 0)
-        if content_length > MAX_BOOK_BYTES or len(response.content) > MAX_BOOK_BYTES:
-            raise CatalogError("Le fichier dépasse la limite de 25 Mo.")
-        if not response.content:
-            raise CatalogError("Le fichier téléchargé est vide.")
-        self._validate_download_url(str(response.url))
-        return DownloadedBook(response.content, mime_type, suffix, str(response.url))
 
     def _get_json(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         try:

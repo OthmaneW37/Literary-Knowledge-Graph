@@ -1,0 +1,27 @@
+services:
+  narrativelens:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      OLLAMA_HOST: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen3.5:4b-q4_K_M
+      OLLAMA_EMBED_MODEL: qwen3-embedding:0.6b
+      VLM_MODEL: qwen3.5:4b-q4_K_M
+      MCP_TRANSPORT: stdio
+      AUTH_ENABLED: "true"
+      JWT_SECRET: "${JWT_SECRET:?Définir JWT_SECRET dans .env}"
+      APPROVAL_SECRET: "${APPROVAL_SECRET:?Définir APPROVAL_SECRET dans .env}"
+      MAX_MODEL_CALLS_PER_REQUEST: "6"
+      MAX_MCP_CALLS_PER_REQUEST: "3"
+      REQUEST_TIMEOUT_SECONDS: "60"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+    restart: unless-stopped

@@ -40,6 +40,8 @@ class GraphRetrievalResult:
     )
 
     available: bool = True
+    # Mentions retain provenance even when no relation was extracted.
+    nodes: list[dict] = field(default_factory=list)
 
 
 class GraphRetriever:

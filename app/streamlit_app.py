@@ -24,7 +24,7 @@ from app.ui_helpers import answer_message, render_message, friendly_error, expor
 from storage.local import ConversationStore, read_json, write_json
 
 
-st.set_page_config(page_title="Literary Chat", page_icon="📚", layout="wide")
+st.set_page_config(page_title="NarrativeLens", page_icon="📚", layout="wide")
 
 # Streamlit 1.40 can collapse an SVG returned by graphviz_chart to 0px when
 # the SVG has only a viewBox (which is what the built-in renderer produces).
@@ -192,7 +192,7 @@ def prepare_import(work_id):
             st.session_state.catalog_warning = friendly_error(error) + " La recherche lexicale reste disponible."
 
 
-st.title("📚 Literary Chat")
+st.title("📚 NarrativeLens")
 st.caption("Pose tes questions au fil de ta lecture. Chaque réponse s’appuie sur les passages du livre, sans quitter cette machine.")
 if warning := st.session_state.pop("catalog_warning", None):
     st.warning(warning)

@@ -26,7 +26,7 @@ def test_answer_rejects_mixture_of_valid_and_invented_citations(monkeypatch, tmp
     monkeypatch.setattr(
         assistant,
         "_call_model",
-        lambda question, passages, history=None, graph_result=None, analysis=None, mode="Ask": {
+        lambda question, passages, history=None, graph_result=None, analysis=None, mode="Ask", background="": {
             "answer": "Josef K. est arrêté. [trial_1] [invented]",
             "citation_ids": ["trial_1", "invented"],
             "visualization": {
@@ -114,7 +114,7 @@ def test_answer_rejects_generated_answer_without_real_citations(monkeypatch, tmp
     monkeypatch.setattr(
         assistant,
         "_call_model",
-        lambda question, passages, history=None, graph_result=None, analysis=None, mode="Ask": {
+        lambda question, passages, history=None, graph_result=None, analysis=None, mode="Ask", background="": {
             "answer": "A fact with no valid citation.", "citation_ids": ["made_up_chunk"]
         },
     )

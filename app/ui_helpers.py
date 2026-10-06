@@ -54,7 +54,7 @@ def render_message(message, index, max_chapter=None):
 
 
 def export_markdown(messages: list[dict]) -> str:
-    parts = ["# Literary Chat\n"]
+    parts = ["# NarrativeLens\n"]
     for message in messages:
         parts.append(f"## {'Question' if message['role'] == 'user' else 'Réponse'}\n\n{message['content']}\n")
         for citation in message.get("citations", []):

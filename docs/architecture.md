@@ -1,112 +1,60 @@
 # Architecture technique
 
-## Objectif
+## État de départ et évolution
 
-Literary Chat répond à des questions en français ou en anglais sur un corpus
-de romans choisi par l'utilisateur. Une réponse doit rester rattachée aux
-passages réellement indexés et ne doit pas dépendre d'une API de génération.
+NarrativeLens conserve le moteur Literary Chat existant : FastAPI, React/TypeScript, Ollama, index BM25 local, embeddings textuels incrémentaux, fusion RRF, citations vérifiées, anti-spoiler par chapitre, graphe local et projection Neo4j facultative. Le chemin texte n’exige pas de VLM, CLIP, LangGraph, MCP ou base externe.
 
-## Parcours des données
+## Chemins exécutables
 
 ```text
-Gutendex / fichier utilisateur
-        │
-        ▼
-validation du format et de la taille
-        │
-        ▼
-extraction EPUB, texte ou PDF
-        │
-        ▼
-nettoyage → chapitres → passages JSON
-        │
-        ▼
-index BM25 en mémoire + embeddings persistés
+Livre local EPUB/PDF/DOCX
+  -> extraction texte + images intégrées
+  -> passages JSON + métadonnées visuelles locales
+  -> BM25 + cache d'embeddings Ollama
+  -> cache d'embeddings visuels CLIP (si activé)
 
-question FR/EN
-        │
-        ▼
-analyse heuristique + expansion bilingue
-        │
-        ├── recherche BM25
-        ├── recherche sémantique multilingue
-        └── Neo4j à la demande (optionnel)
-                    │
-                    ▼
-     fusion réciproque des classements
-                    │
-                    ▼
-           contexte borné et sourcé
-                    │
-                    ▼
-             génération Ollama
-                    │
-                    ▼
-       validation citations / diagramme
+Question texte + image facultative
+  -> FastAPI : format, signature et taille de l'image
+  -> observations VLM optionnelles (texte d'image non fiable)
+  -> recherche textuelle existante et recherche visuelle optionnelle
+  -> réponse sur la question d'origine, observations seulement pour guider la recherche
+  -> validation de citations + SpoilerPolicy
+  -> UI : preuves texte, observations incertaines et visuels retrouvés
 ```
 
-## Responsabilités
+`NarrativeWorkflow` utilise un `StateGraph` LangGraph si l'extra est installé. Il exécute le chemin RAG actuel, vérifie les citations et choisit réponse ou clarification. Sans LangGraph, les mêmes étapes sont exécutées localement sans empêcher le démarrage.
 
-- `catalog` obtient ou reçoit les fichiers et maintient le catalogue local.
-- `ingestion` transforme un document en passages stables et citables.
-- `retrieval` analyse la question et rassemble les preuves textuelles ou
-  structurées.
-- `rag` construit une réponse contrainte, valide les identifiants de source et
-  expose des mesures de latence.
-- `graph` stocke les entités et relations optionnelles sans être nécessaire au
-  fonctionnement du chat.
-- `app/api.py` expose les opérations du moteur par HTTP local ; `web/` fournit
-  l'interface React/TypeScript. Ni l'API ni le navigateur ne réimplémentent
-  l'indexation ou la validation des sources.
+## Stockage
 
-## Décisions importantes
+- Textes, passages, catalogue, graphe local, historique en mode dev, progression et images restent sous `data/`.
+- Les visuels sont sauvegardés dans `data/library/visuals/<work_id>/`; les descriptions et repères dans `data/processed/<work_id>.visuals.json`.
+- Les vecteurs image sont mis en cache dans `data/library/visual_embeddings/` avec le modèle local.
+- Quand `AUTH_ENABLED=true`, utilisateurs, progression, conversations et annotations sont séparés sous `data/library/users/<clé opaque>/`. La bibliothèque reste sur le disque local ; des ACL par livre peuvent restreindre sa consultation.
+- Neo4j est une projection facultative du graphe. Qdrant, PostgreSQL et MLflow ne sont pas encore raccordés malgré leurs variables réservées.
 
-### Un appel LLM sur le chemin standard
+## Anti-spoiler et evidence
 
-La classification précédente utilisait le même modèle 7B que la génération,
-ce qui ajoutait un chargement et une génération avant même la recherche. Le
-mode par défaut est maintenant heuristique et bilingue. Le mode LLM reste
-activable par configuration lorsqu'une meilleure résolution conversationnelle
-est plus importante que la latence.
+`SpoilerPolicy` refuse les chapitres ultérieurs et les repères inconnus quand une limite existe. La recherche sémantique, les branches ciblées, le graphe, l'ajout de contexte adjacent, les citations visuelles et la préparation d'annotation appliquent la même règle. Le moteur texte vérifie les identifiants de source et les citations exactes avant affichage. Une observation VLM n'est pas incluse comme preuve et n'identifie pas seule un personnage.
 
-### Recherche hybride locale
+## Services facultatifs
 
-BM25 avec index inversé est rapide et précis sur les noms propres. Les vecteurs
-de `qwen3-embedding:0.6b` améliorent le rappel pour les paraphrases et les
-questions dont la langue diffère de celle du roman. Une fusion RRF combine les
-deux classements sans comparer directement leurs échelles de score. Les
-vecteurs des passages sont calculés par lots, persistés sous `data/library` et
-seuls les passages nouveaux ou modifiés sont recalculés.
+| Capacité | Composant | Sans le composant |
+|---|---|---|
+| Génération et embeddings texte | Ollama | Réponse extractive; recherche BM25 |
+| Analyse d’image | VLM Ollama | Chat texte conservé; message d’indisponibilité |
+| Similarité visuelle | sentence-transformers CLIP | Pas de retrieval visuel, le texte continue |
+| OCR PDF scanné | pytesseract + Tesseract système | Le PDF scanné est refusé avec indication |
+| Graphe persistant | Neo4j | Graphe local |
+| Orchestration explicite | LangGraph | Fallback Python direct |
+| Actions externes | SDK MCP, stdio | Appels API locaux pour annotation |
+| Cross-encoder | sentence-transformers | Diversification locale existante |
 
-### Neo4j facultatif et paresseux
+## Sécurité et frontières
 
-La base graphe ne se connecte qu'à la première question qui en a besoin et
-seulement lorsque `NEO4J_ENABLED=true`. Une
-base arrêtée ne bloque donc ni le démarrage, ni les questions textuelles. Les
-diagrammes peuvent aussi être produits directement depuis les passages, puis
-sont filtrés pour ne conserver que les arêtes associées à une preuve valide.
+L'upload image accepte JPG, PNG et WebP, valide la signature réelle, impose `MAX_IMAGE_BYTES`, puis traite l'image dans un fichier temporaire supprimé après la requête. Les fichiers importés restent locaux. Auth utilise un hash PBKDF2 et des JWT HS256 lorsque activée. Les jetons d'approbation d'annotation lient le propriétaire, le livre, le chapitre, le texte et les IDs de preuves; le stockage est idempotent.
 
-### Couverture des livres
+Le modèle, le VLM et les embeddings optionnels doivent être téléchargés séparément. L’évaluateur mesure les latences p50/p95. Le middleware journalise seulement route, durée, statut et compteurs d’appels. Les appels Ollama/MCP des conversations sont bornés ; MLflow n’est pas raccordé. La segmentation BD reste à la page.
 
-Gutendex fournit légalement les textes du domaine public. Les titres qui ne
-peuvent pas être téléchargés sont couverts par l'import d'un exemplaire local
-EPUB, TXT, Markdown ou PDF textuel. Le contenu d'un livre importé reste sous
-`data/` et est ignoré par Git.
+## Tests
 
-## Garanties et limites
-
-- Une citation inventée par le modèle est rejetée.
-- Une arête de diagramme sans passage de preuve est rejetée.
-- La taille des fichiers et du contexte envoyé au modèle est bornée.
-- Une réponse extractive reste disponible quand Ollama est arrêté.
-- Un PDF image nécessite de l'OCR avant import.
-- Le moteur ne peut pas garantir une réponse correcte si l'information n'est
-  pas présente dans le texte ou si aucun passage pertinent n'est récupéré.
-
-## Stratégie de test
-
-Les tests unitaires couvrent le découpage, BM25, l'expansion bilingue, les
-citations, les diagrammes, Neo4j dégradé, Gutendex et les imports locaux. Les
-routes FastAPI de bibliothèque, de passages et de chat ont aussi des tests
-d'intégration avec un moteur simulé. Les appels externes et Ollama sont
-simulés dans la suite automatisée.
+La suite pytest teste les composants locaux avec providers simulés, notamment la limite spoiler sur visuels, l'upload, les observations, les approbations d'annotation, l'idempotence, l'isolation et le workflow de repli. `npm run build` vérifie TypeScript et Vite.

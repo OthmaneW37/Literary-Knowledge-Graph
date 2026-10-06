@@ -5,6 +5,7 @@ import json
 import re
 from pathlib import Path
 from time import perf_counter
+import math
 
 from .engine import LiteraryAssistant
 from storage.local import read_json, write_json
@@ -55,6 +56,11 @@ def evaluate(questions_path: str | Path = "data/annotations/eval_questions.json"
                 "annotated_passage_recall": hits / max(len(expected_ids), 1),
                 "annotated_source_precision": hits / max(len(passages), 1),
             })
+            ranks = [i + 1 for i, passage in enumerate(passages) if passage.chunk_id in expected_ids]
+            ideal = sum(1 / math.log2(rank + 1) for rank in range(1, min(5, len(expected_ids)) + 1))
+            row.update({'recall_at_5': len(expected_ids & {p.chunk_id for p in passages[:5]}) / max(1, len(expected_ids)),
+                        'ndcg_at_5': sum(1 / math.log2(rank + 1) for rank in ranks if rank <= 5) / ideal if ideal else 0,
+                        'mrr_at_10': next((1 / rank for rank in ranks if rank <= 10), 0)})
         if generate_answers:
             answer = assistant.answer(case["question"], top_k=top_k)
             row.update({
@@ -72,6 +78,10 @@ def evaluate(questions_path: str | Path = "data/annotations/eval_questions.json"
         values = [float(row[key]) for row in rows if key in row]
         return round(sum(values) / len(values), 3) if values else None
 
+    def percentile(key, quantile):
+        values = sorted(float(row[key]) for row in rows if key in row)
+        return values[max(0, math.ceil(len(values) * quantile) - 1)] if values else None
+
     return {
         "question_count": len(rows), "retrieval_hit_rate": mean("retrieval_hit"),
         "mean_work_recall": mean("work_recall"), "mean_work_precision": mean("work_precision"),
@@ -80,6 +90,10 @@ def evaluate(questions_path: str | Path = "data/annotations/eval_questions.json"
         "refusal_accuracy": mean("retrieval_refusal_correct"),
         "generation_validation_failure_rate": mean("generation_validation_failed"),
         "mean_retrieval_ms": mean("retrieval_ms"), "mean_answer_ms": mean("answer_ms"),
+        "recall_at_5": mean('recall_at_5'), "ndcg_at_5": mean('ndcg_at_5'), "mrr_at_10": mean('mrr_at_10'),
+        "retrieval_p50_ms": percentile('retrieval_ms', .5), "retrieval_p95_ms": percentile('retrieval_ms', .95),
+        "answer_p50_ms": percentile('answer_ms', .5), "answer_p95_ms": percentile('answer_ms', .95),
+        "retrieval_mode": 'lexical_only' if lexical_only else 'hybrid', "top_k": top_k,
         "note": "Gold quotes are a small, non-exhaustive annotation set. Citation provenance is checked; factual entailment still requires human review.",
         "cases": rows,
     }

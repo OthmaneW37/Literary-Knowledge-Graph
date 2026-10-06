@@ -50,6 +50,11 @@ class LibraryImporter:
             "raw_filename": f"{book.work_id}{downloaded.suffix}",
             "download_url": downloaded.source_url,
             "cover_url": book.formats.get("image/jpeg", ""),
+            "summary": "\n\n".join(book.summaries),
+            "subjects": list(book.subjects),
+            "metadata_sources": [{"source_name": "Project Gutenberg", "source_url": f"https://www.gutenberg.org/ebooks/{book.provider_id}",
+                                  "summary": "\n\n".join(book.summaries), "subjects": list(book.subjects), "people": [],
+                                  "retrieved_at": datetime.now(timezone.utc).isoformat()}],
         }
         return self._install_content(
             work_id=book.work_id,
@@ -66,6 +71,7 @@ class LibraryImporter:
         title: str = "",
         author: str = "Auteur inconnu",
         language: str = "",
+        metadata: dict | None = None,
     ) -> InstalledBook:
         """Index a legally obtained EPUB, TXT, Markdown or text-based PDF."""
         suffix = Path(filename).suffix.casefold()
@@ -93,7 +99,34 @@ class LibraryImporter:
             "raw_filename": f"{work_id}{suffix}",
             "original_filename": Path(filename).name,
         }
-        return self._install_content(work_id, title, content, suffix, record)
+        if metadata:
+            self._apply_metadata(record, metadata)
+        installed = self._install_content(work_id, title, content, suffix, record)
+        if metadata and installed.already_installed:
+            self.attach_metadata(installed.work_id, metadata)
+        return installed
+
+    @staticmethod
+    def _apply_metadata(record, metadata):
+        sources = record.setdefault("metadata_sources", [])
+        source = {key: metadata.get(key) for key in ("provider", "provider_id", "source_name", "source_url", "retrieved_at", "summary", "subjects", "people", "first_publish_year")}
+        record["metadata_sources"] = [s for s in sources if s.get("source_url") != source["source_url"]] + [source]
+        if metadata.get("summary"):
+            record["summary"] = metadata["summary"]
+        record["subjects"] = list(dict.fromkeys([*record.get("subjects", []), *metadata.get("subjects", [])]))[:50]
+        if metadata.get("first_publish_year"):
+            record["first_publish_year"] = metadata["first_publish_year"]
+        if not str(record.get("cover_url", "")).startswith("/api/visuals/") and metadata.get("cover_url"):
+            record["cover_url"] = metadata["cover_url"]
+            record["cover_origin"] = metadata["source_name"]
+
+    def attach_metadata(self, work_id, metadata):
+        record = next((dict(r) for r in self.records() if r["work_id"] == work_id), None)
+        if record is None:
+            raise ValueError("Livre inconnu.")
+        self._apply_metadata(record, metadata)
+        records = [r for r in self._read_records() if r["work_id"] != work_id]
+        self._write_records([*records, record])
 
     def _install_content(
         self,
@@ -102,10 +135,12 @@ class LibraryImporter:
         content: bytes,
         suffix: str,
         record: dict,
+        force: bool = False,
     ) -> InstalledBook:
         records = self._read_records()
         chunks_path = self.processed_dir / f"{work_id}.chunks.json"
-        if any(item.get("work_id") == work_id for item in records) and chunks_path.exists():
+        visuals_path = self.processed_dir / f"{work_id}.visuals.json"
+        if not force and any(item.get("work_id") == work_id for item in records) and chunks_path.exists():
             self.set_archived(work_id, False)
             stored = next(item for item in records if item.get("work_id") == work_id)
             return InstalledBook(work_id, stored["title"], already_installed=True)
@@ -133,6 +168,35 @@ class LibraryImporter:
                 or detect_language(extracted)
             )
             record["page_count"] = document.page_count
+            if document.summary and not record.get("summary"):
+                record["summary"] = document.summary
+                record.setdefault("metadata_sources", []).append({"source_name": "Métadonnées de l’EPUB",
+                    "source_url": "", "summary": document.summary, "subjects": list(document.subjects), "people": []})
+            record["subjects"] = list(dict.fromkeys([*record.get("subjects", []), *document.subjects]))[:50]
+            visual_dir = self.library_dir / "visuals" / work_id
+            staged_visual_dir = stage / "visuals"
+            staged_visual_dir.mkdir(parents=True, exist_ok=True)
+            visual_records = []
+            for number, visual in enumerate(document.visuals, start=1):
+                if not visual.content:
+                    continue
+                suffix_by_type = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif"}
+                image_suffix = suffix_by_type.get(visual.media_type, ".bin")
+                visual_id = hashlib.sha256(visual.content).hexdigest()[:20]
+                filename = f"{visual_id}{image_suffix}"
+                (staged_visual_dir / filename).write_bytes(visual.content)
+                visual_records.append({
+                    "visual_id": visual_id, "work_id": work_id, "chapter": visual.chapter,
+                    "page": visual.page, "source_document": visual.source_document,
+                    "type": visual.visual_type, "local_path": str((visual_dir / filename).resolve()),
+                    "caption": visual.caption, "surrounding_text": visual.surrounding_text,
+                    "ocr_text": visual.ocr_text,
+                    "access": {"owner": "local_user", "visibility": "private", "stored_locally": True},
+                    "media_type": visual.media_type,
+                })
+                if visual.visual_type == "cover":
+                    record["cover_url"] = f"/api/visuals/{visual_id}"
+                    record["cover_origin"] = "Couverture intégrée au fichier EPUB"
             if suffix == ".pdf":
                 record["page_numbering"] = "physical_pdf_page"
             cleaned = clean_text(extracted)
@@ -142,6 +206,7 @@ class LibraryImporter:
                 )
             staged_clean = stage / clean_path.name
             staged_clean.write_text(cleaned, encoding="utf-8")
+            (stage / visuals_path.name).write_text(json.dumps(visual_records, ensure_ascii=False, indent=2), encoding="utf-8")
             build_chunks_for_work(
                 work_id, staged_clean, stage / chunks_path.name,
                 chunk_size=int(os.getenv("RAG_CHUNK_SIZE", "240")),
@@ -149,8 +214,14 @@ class LibraryImporter:
             )
             (stage / raw_path.name).write_bytes(content)
             (stage / extracted_path.name).write_text(extracted, encoding="utf-8")
-            for target in (raw_path, extracted_path, clean_path, chunks_path):
+            for target in (raw_path, extracted_path, clean_path, chunks_path, visuals_path):
                 (stage / target.name).replace(target)
+            if visual_dir.exists():
+                import shutil
+                shutil.rmtree(visual_dir)
+            if staged_visual_dir.exists() and any(staged_visual_dir.iterdir()):
+                visual_dir.parent.mkdir(parents=True, exist_ok=True)
+                staged_visual_dir.replace(visual_dir)
         record["imported_at"] = record.get("imported_at") or datetime.now(timezone.utc).isoformat()
         record["content_hash"] = hashlib.sha256(content).hexdigest()
         record["size_bytes"] = len(content)
@@ -194,19 +265,10 @@ class LibraryImporter:
 
     def _rebuild_record(self, record: dict, source: Path) -> InstalledBook:
         work_id = record["work_id"]
-        document = DocumentLoader().load(source)
-        cleaned = clean_text(document.text)
-        if len(cleaned.split()) < 100:
-            raise ValueError("Texte trop court pour réindexer ce livre.")
-        self.library_dir.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(dir=self.library_dir) as temporary:
-            path = Path(temporary) / f"{work_id}.clean.txt"
-            path.write_text(cleaned, encoding="utf-8")
-            output = path.with_name(f"{work_id}.chunks.json")
-            build_chunks_for_work(work_id, path, output, int(os.getenv("RAG_CHUNK_SIZE", "240")), int(os.getenv("RAG_CHUNK_OVERLAP", "40")))
-            output.replace(self.processed_dir / output.name)
-            path.replace(self.processed_dir / path.name)
-        return InstalledBook(work_id, record["title"])
+        return self._install_content(
+            work_id, record.get("title", ""), source.read_bytes(), source.suffix.casefold(),
+            dict(record), force=True,
+        )
 
     def _read_records(self) -> list[dict]:
         if not self.catalog_path.exists():

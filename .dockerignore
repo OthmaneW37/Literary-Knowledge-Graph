@@ -1,0 +1,12 @@
+.git
+.env
+.venv
+web/node_modules
+web/dist
+data/library
+data/raw
+data/processed
+output
+tmp
+__pycache__
+*.log

@@ -1,0 +1,30 @@
+{
+  "question_count": 11,
+  "retrieval_hit_rate": 0.8,
+  "mean_work_recall": 0.8,
+  "mean_work_precision": 0.79,
+  "passage_hit_rate": 1.0,
+  "annotated_source_precision": 0.1,
+  "refusal_accuracy": 1.0,
+  "generation_validation_failure_rate": null,
+  "mean_retrieval_ms": 274.091,
+  "mean_answer_ms": null,
+  "recall_at_5": 1.0,
+  "ndcg_at_5": 0.926,
+  "mrr_at_10": 0.9,
+  "retrieval_p50_ms": 53.0,
+  "retrieval_p95_ms": 2414.0,
+  "answer_p50_ms": null,
+  "answer_p95_ms": null,
+  "retrieval_mode": "lexical_only",
+  "top_k": 10,
+  "note": "Gold quotes are a small, non-exhaustive annotation set. Citation provenance is checked; factual entailment still requires human review.",
+  "annotated_question_count": 5,
+  "verification": {
+    "python_tests": 113,
+    "javascript_tests": 12,
+    "docker_library_http": 200,
+    "docker_frontend_http": 200,
+    "vlm_synthetic_seconds": 11.59
+  }
+}

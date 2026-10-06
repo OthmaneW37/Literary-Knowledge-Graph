@@ -1,0 +1,1190 @@
+{
+  "description": "Identités et relations relues dans les passages de la traduction anglaise du corpus. Les références collectives temporaires et domestiques non identifiables restent sans attribution. Mr. Samsa est résolu séparément dans chaque passage. Aucune règle globale de remplacement.",
+  "entities": {
+    "gregor": {
+      "name": "Gregor Samsa",
+      "label": "Gregor Samsa",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p001",
+      "anchor_fingerprint": "078fe9b18a177dd6fee2a6b450f90b8b141173ed32925ff26d3005c7390bb102",
+      "quote": "Gregor Samsa"
+    },
+    "grete": {
+      "name": "Grete",
+      "label": "Grete",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p026",
+      "anchor_fingerprint": "2bace4f9f4646dccaee47a2871fb102aac9404e1ddf403af5940f5ea102f5c22",
+      "quote": "Grete"
+    },
+    "mother": {
+      "name": "Gregor's mother",
+      "label": "Mère de Gregor",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p030",
+      "anchor_fingerprint": "3afaec656fc34b02bd55827e1b4aecbf466beab4d38525a1f24e973d7d4f20d8",
+      "quote": "Gregor's mother"
+    },
+    "father": {
+      "name": "Gregor's father",
+      "label": "Père de Gregor",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p031",
+      "anchor_fingerprint": "e62d91a37f32e370559c77c9e17a0bbcce836a5fff72e4deb9941e418adba41f",
+      "quote": "Gregor's father"
+    },
+    "boss": {
+      "name": "the boss",
+      "label": "Patron de Gregor",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p005",
+      "anchor_fingerprint": "de24dd3ec926d6815ee45f0422340f66fc1b6805559c249d61826e2ea2dfd6e3",
+      "quote": "the boss"
+    },
+    "clerk": {
+      "name": "the chief clerk",
+      "label": "Fondé de pouvoir",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p017",
+      "anchor_fingerprint": "cfe93fb9bdc85492086856965737d71c8be0b2b650e9f85edf8d48db05e62b20",
+      "quote": "the chief clerk"
+    },
+    "anna": {
+      "name": "Anna",
+      "label": "Anna",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p026",
+      "anchor_fingerprint": "2bace4f9f4646dccaee47a2871fb102aac9404e1ddf403af5940f5ea102f5c22",
+      "quote": "Anna"
+    },
+    "cleaner": {
+      "name": "the charwoman",
+      "label": "Femme de ménage",
+      "kind": "character",
+      "anchor": "metamorphosis_ch03_p010",
+      "anchor_fingerprint": "4ea1a60a5b6291c1fa578ad0a710fbba744918bb7e706c2108429847db2cefeb",
+      "quote": "the charwoman"
+    },
+    "assistant": {
+      "name": "the office assistant",
+      "label": "Employé du bureau",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p005",
+      "anchor_fingerprint": "de24dd3ec926d6815ee45f0422340f66fc1b6805559c249d61826e2ea2dfd6e3",
+      "quote": "the office assistant"
+    },
+    "doctor": {
+      "name": "the doctor",
+      "label": "Médecin",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p027",
+      "anchor_fingerprint": "21266524bc92ebd97c31537cb00d30ddd6671f81eee6edeaa54713655e2acc0a",
+      "quote": "the\ndoctor"
+    },
+    "locksmith": {
+      "name": "the locksmith",
+      "label": "Serrurier",
+      "kind": "character",
+      "anchor": "metamorphosis_ch01_p027",
+      "anchor_fingerprint": "21266524bc92ebd97c31537cb00d30ddd6671f81eee6edeaa54713655e2acc0a",
+      "quote": "the locksmith"
+    },
+    "lodgers": {
+      "name": "the three gentlemen",
+      "label": "Les trois locataires",
+      "kind": "group",
+      "anchor": "metamorphosis_ch03_p018",
+      "anchor_fingerprint": "669ec0a48fe1405aee8bcd2455b2f8905449d8c2c4a60e07f9da23ef83a9739a",
+      "quote": "the three gentlemen"
+    },
+    "middle": {
+      "name": "the middle gentleman",
+      "label": "Locataire du milieu",
+      "kind": "character",
+      "anchor": "metamorphosis_ch03_p022",
+      "anchor_fingerprint": "31c19550dd5c792e58a6f75471883d2ef1d320fb2bad4585bac9022e429d15a5",
+      "quote": "the middle gentleman"
+    }
+  },
+  "passages": {
+    "metamorphosis_ch01_p001": {
+      "fingerprint": "078fe9b18a177dd6fee2a6b450f90b8b141173ed32925ff26d3005c7390bb102",
+      "assignments": {
+        "Gregor Samsa": "gregor"
+      }
+    },
+    "metamorphosis_ch01_p002": {
+      "fingerprint": "691753971477bd088b08acbcf835b7c4928a89ec4e3ca7e7269acf7e16bd5917",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch01_p005": {
+      "fingerprint": "de24dd3ec926d6815ee45f0422340f66fc1b6805559c249d61826e2ea2dfd6e3",
+      "assignments": {
+        "the boss": "boss",
+        "the office assistant": "assistant"
+      }
+    },
+    "metamorphosis_ch01_p006": {
+      "fingerprint": "5b80ea640a74aae9710a863fecb49296545c0f1816422cfc6bd0e8a9206d83df",
+      "assignments": {
+        "Gregor": "gregor",
+        "office assistant": "assistant"
+      }
+    },
+    "metamorphosis_ch01_p007": {
+      "fingerprint": "f0c96f8d69fda0ad0bf52ac20427cc0417e64c759a5c9af73285cca4c3213987",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch01_p008": {
+      "fingerprint": "b7f03d1b2887f86ea8661c7cfc04ef0641067459c8443cdc443e08ab95ffc788",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch01_p009": {
+      "fingerprint": "411f2599e386a680b70d7195d4ab074c524db1f65457fb5620a76237bb5a0059",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch01_p010": {
+      "fingerprint": "e371e196d89880dbae52635a81838849ddfc2d1a50bdfaf0b4edb54a9398a9c7",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch01_p011": {
+      "fingerprint": "2abcb5d2e77bf5baea509a24582a8e4a30a8b2b273ccb4c618f6d393b7159b8e",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch01_p015": {
+      "fingerprint": "a615035e2b1cfdd494091158baf45e53d1b2e70d63467ea72dd0f1ba7948ff25",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch01_p016": {
+      "fingerprint": "da1cbecc35ee25a75ffeb8df478d0bb595399fc33d2dbd318f55b385276f0058",
+      "assignments": {
+        "Gregor": "gregor",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p017": {
+      "fingerprint": "cfe93fb9bdc85492086856965737d71c8be0b2b650e9f85edf8d48db05e62b20",
+      "assignments": {
+        "Gregor": "gregor",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p018": {
+      "fingerprint": "f36a25f71131c4aeb712f403cb764712ddf095078dd33285e887669264ad7730",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p019": {
+      "fingerprint": "00dc4cd48dd00eedab4077845e538bc39bc3796fd565899967b70ed5d92b1327",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p020": {
+      "fingerprint": "b033b075dc2d1cd2b4aa82ce36008626993162ec31f9248f73e756bf3b1efefd",
+      "assignments": {
+        "Gregor": "gregor",
+        "Mrs. Samsa": "mother",
+        "his father": "father",
+        "his sister": "grete",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p021": {
+      "fingerprint": "dbf9a75dd2803c62ee4def3774f0a190770a27e592261e6ac4db5129da81217d",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his sister": "grete",
+        "the chief clerk": "clerk",
+        "their parents": null
+      }
+    },
+    "metamorphosis_ch01_p022": {
+      "fingerprint": "0eb0fbd40d74fca3a0c90acc35d3d1af4103daeb38f94d1bf257e2ae104ada80",
+      "assignments": {
+        "Gregor": "gregor",
+        "Mr. Samsa": "gregor",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p023": {
+      "fingerprint": "765502ada8ab39a80a90ef591ef9a63c4132896d7516f0cd0b831db615a8e689",
+      "assignments": {
+        "Gregor": "gregor",
+        "Mr. Samsa": "gregor",
+        "your parents": null
+      }
+    },
+    "metamorphosis_ch01_p024": {
+      "fingerprint": "9c8f102cf5f7fcda96e46275794b2b65b7c859c9704334192b4d89f6ea1c915a",
+      "assignments": {
+        "my parents": null,
+        "the boss": "boss"
+      }
+    },
+    "metamorphosis_ch01_p025": {
+      "fingerprint": "7cef084246b2741b4f1d726ef7f225d8f59cd8197f9fcdf221fb78d5ddce2f93",
+      "assignments": {
+        "Gregor": "gregor",
+        "the boss": "boss",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p026": {
+      "fingerprint": "2bace4f9f4646dccaee47a2871fb102aac9404e1ddf403af5940f5ea102f5c22",
+      "assignments": {
+        "Anna": "anna",
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "his father": "father",
+        "his mother": "mother",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p027": {
+      "fingerprint": "21266524bc92ebd97c31537cb00d30ddd6671f81eee6edeaa54713655e2acc0a",
+      "assignments": {
+        "Gregor": "gregor",
+        "his parents": null,
+        "his sister": "grete",
+        "the chief clerk": "clerk",
+        "the doctor": "doctor",
+        "the locksmith": "locksmith",
+        "the two girls": null
+      }
+    },
+    "metamorphosis_ch01_p028": {
+      "fingerprint": "54a38444c73c0e29a7bf6def60af7077e8d05065bbe896c1ca6375f0479b3e51",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p029": {
+      "fingerprint": "e3c8cc4f56aca02f393f139cdbf732ee893a84d9a5bb07d24a503540071cd9df",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch01_p030": {
+      "fingerprint": "3afaec656fc34b02bd55827e1b4aecbf466beab4d38525a1f24e973d7d4f20d8",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's mother": "mother",
+        "his father": "father",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p031": {
+      "fingerprint": "e62d91a37f32e370559c77c9e17a0bbcce836a5fff72e4deb9941e418adba41f",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch01_p032": {
+      "fingerprint": "4c176673060e2c28d1cc5d11d9594a411da21851a26d6670f094faa35de9ac97",
+      "assignments": {
+        "Gregor": "gregor",
+        "chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p033": {
+      "fingerprint": "1ae1d7701969b435441116d22b5fc7578dc4681f474ebcd076950b8091860a74",
+      "assignments": {
+        "my parents": null,
+        "my sister": "grete",
+        "the boss himself": "boss",
+        "the travellers": null,
+        "you, sir": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p034": {
+      "fingerprint": "ee1a35b11c1b7a2c48cfd5369a0f9daf9a42ca346328e080c1559a0fe41788b8",
+      "assignments": {
+        "Gregor": "gregor",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p035": {
+      "fingerprint": "ba0dffbfbe15dfaffb7ba4879acd2a2d6705e5299d1a4103599e183dd7616626",
+      "assignments": {
+        "Gregor": "gregor",
+        "his parents": null,
+        "his sister": "grete",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p036": {
+      "fingerprint": "7df1f7d982ab618d532d26a69bcb3459cf5784798c3c8f8907c8966ab42bc1df",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother",
+        "his sister": "grete",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p037": {
+      "fingerprint": "259023bbda2192736685b0c80b17092502bff1c6c7288e8b00210e4d81faf789",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p038": {
+      "fingerprint": "fc77f5f105dd7ce1544ea6b3559492b799b3d56a31ef37c2ac5d47984ec09e23",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's mother": "mother",
+        "his father": "father",
+        "the chief clerk": "clerk"
+      }
+    },
+    "metamorphosis_ch01_p039": {
+      "fingerprint": "cc03d2b128f4ad090a402c9141de6a46998860ae5d63e065752fde0d8f4f2083",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch01_p040": {
+      "fingerprint": "01b3b8ddcacce2c49dc2fee406e80c939d213cd3420be6839b01bf436ba025ea",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch01_p041": {
+      "fingerprint": "4e1fdb1c3e45660b1daca96b94273bd6142419b145f9371bceaceda162334774",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p001": {
+      "fingerprint": "b66c64ec809762e2cf61e5a927d5866991bdacd1bf75d3896de4babde8feef52",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p002": {
+      "fingerprint": "bcc2ef91f4c90db2348bac9daf89088140d065f30297d6000ddae028d1d9ee17",
+      "assignments": {
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p003": {
+      "fingerprint": "f95f5caf328d6bf3097d4ec61aa02120893055039817ed43686675ccb7cf033c",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p004": {
+      "fingerprint": "05d7f06c98f33f6a1c034af6c6867180f0d90da19e5149d85d5a836fd4060de5",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p005": {
+      "fingerprint": "61ce429be216103470aaf91afe85e84006c77afadd3f9408541b1cb866c03b76",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p007": {
+      "fingerprint": "4498f8394f49b402219ca28a840c883237d99a5c20b9fb2e7aedc6ede2aa0c63",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p008": {
+      "fingerprint": "620cbf399aa8b05ff1762b0f88165d537eff87d87bf31e731fbc2f90e1769d8f",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p009": {
+      "fingerprint": "f774423b63346e77cc9cf4c033cab297c6a443019e81728bfbb8bfa680d92497",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p010": {
+      "fingerprint": "922213e15a495c9074c5320a7f716b8119b80ac8b3551d56ab7263848ee69c97",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p011": {
+      "fingerprint": "d5c012bfe6028579e2e382c0819be12ad931e254fe5f29c4691c5ae8beab52f5",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's sister": "grete",
+        "his parents": null,
+        "the maid": null
+      }
+    },
+    "metamorphosis_ch02_p012": {
+      "fingerprint": "ab9730b31c6319bd79cbf36b9825b2f3daccd6d46c3470448cad033d8c712044",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p013": {
+      "fingerprint": "582f039de5794b4eee5b648d133c3701d538fe6c0a5af9bffb3446506ce0e0cb",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's mother": "mother",
+        "the maid": null
+      }
+    },
+    "metamorphosis_ch02_p014": {
+      "fingerprint": "a498fc9c0792a88653ad327ff250f0e04325b682680ebdbdd2a6da84a5063f8f",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's mother": "mother",
+        "Gregor's sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p015": {
+      "fingerprint": "3c8d888607e482d56249e008e378874a34495b04d22cbfbfd6cc866a338f5446",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's mother": "mother",
+        "his father": "father",
+        "the housekeeper": null
+      }
+    },
+    "metamorphosis_ch02_p016": {
+      "fingerprint": "9eec3c140211e21bbce4887cf9e2e974f7a8221ea462d52a741b98d2040df5f9",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p017": {
+      "fingerprint": "2b7f1a45e0af7db30084398cd4d70c85946c60cb593f3954b87a20a9fddaab19",
+      "assignments": {
+        "Gregor": "gregor",
+        "Their parents": null,
+        "his father": "father",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p018": {
+      "fingerprint": "6ce32ad169bbf11260d81d7127f2138cd62eb51286e4e245febcbc01fdc2ff06",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's mother": "mother",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch02_p019": {
+      "fingerprint": "f2dfa3e9ba69f7138fc98c7748ce3f5c30ea6e174a9962f7759cf4dc4bd838ec",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p020": {
+      "fingerprint": "a04592a72462831f60e2c0fbe6dde9470841516c0b77cbbcb78b14ef03f92fe6",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p021": {
+      "fingerprint": "39ecd4fb7da59c40741cfdbff23334e6da485b107e9dd4ed23926d49a44076af",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p022": {
+      "fingerprint": "363fb631ddfc93a02a9b51150bb7ee1cedcd47bc8f581b8188525ca9f9b0f8da",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch02_p023": {
+      "fingerprint": "9ec6454ecf842d01d928d4b1ef5e58ea34e40f103fa04b7215e550404c049098",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p024": {
+      "fingerprint": "8d33993cdabb55d68db45c47aa6ae33902dc229843932d8497a4e6c638aab7ad",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p025": {
+      "fingerprint": "80c836d9146c9af17c63fd3c41d6aa80cf1457db10f74876fd297855fbef3c12",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p026": {
+      "fingerprint": "8fbaf9c622fbc73b779ba46e4b91198a1b5fbcb0a99eb93ff43d3fccaa8ad2c7",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p027": {
+      "fingerprint": "aa85d475b23d7d2d56f95c4ea1914219db518bcae6f8745c2764673a9325c0b4",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p028": {
+      "fingerprint": "0e857e1abfac6f40c534e1d6f01dadb0aa83007fb708342fd74aa62e6e4b5758",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p029": {
+      "fingerprint": "2414708338b0af724dff13998b73a6768bc7af92cbd442b904058bc4a52bb3e3",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch02_p030": {
+      "fingerprint": "1b3982a1baab46cc3073f2dbbf9b921cc70f63bc130f27a4a57ae2fdf29f6cfb",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch02_p031": {
+      "fingerprint": "c840db1b5606cf409828bb8b913c256ed5e5b7ef3b9d8f1b0025ec5df11de8f7",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch02_p032": {
+      "fingerprint": "7de064e3a1851d7d4cb12a714ce6be4a50b977931b3c4d49df28120dc7d57e50",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch02_p033": {
+      "fingerprint": "eada1fc1a2c9e71147f53fa3334d24687fa233e5de5c54ca61075f733a4916b0",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch02_p034": {
+      "fingerprint": "7ff693f140be0f81596dfd9f45bc26906e62b65b96f419f4f389874043d80920",
+      "assignments": {
+        "Gregor": "gregor",
+        "the two women": null
+      }
+    },
+    "metamorphosis_ch02_p035": {
+      "fingerprint": "597364269bfbb707970edee170e5ec38543c742409172806de983c44a12220f9",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete"
+      }
+    },
+    "metamorphosis_ch02_p036": {
+      "fingerprint": "1c6ec5846cd6ef6e1f9f7bbc5cade4cc79971e80fc2cb23c2dad1ce806a0a8f5",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete"
+      }
+    },
+    "metamorphosis_ch02_p037": {
+      "fingerprint": "347efaacf02c67b554e069ea374f145cdceb0ee9cb523cd138385fd2a9fc411f",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch02_p038": {
+      "fingerprint": "95f1c6e645c2a8a20b9798b16ccef7ccb991989922de1a6bb57aa5720590fba1",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "Mother": "mother",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch02_p039": {
+      "fingerprint": "f1659dc32a0ddd1920df96eddd2552a29124d4ad3e60c0fa8a57505848d6349a",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch02_p040": {
+      "fingerprint": "809dfd7729e173d46d7ca12d1c012a530996215d1a64302987e7e9def4c64246",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch02_p041": {
+      "fingerprint": "6abd5852424ebddb107cb254bc6b2e9ea7530cbd87101bc02f29cb86a8dbe6ac",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch02_p042": {
+      "fingerprint": "89cbb7a98bdb92a28df43edfa3903789a07e788b0bfb4d6ab14bc0a3075bcb5c",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch02_p043": {
+      "fingerprint": "55056c04b70f4cd2914d47bd3e83f0b2b9dd6ce2c04116bd88030ffa25676891",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p001": {
+      "fingerprint": "5fc8bbb2af5f8d0931279916ab3fd0400dafb2a2eba3f9764c10c222251da4ca",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father"
+      }
+    },
+    "metamorphosis_ch03_p002": {
+      "fingerprint": "a5ef34d130020ba5b369bef2417a961c92a03e87490a3555a313e6ee391c0d5f",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p003": {
+      "fingerprint": "1a1e2e70b705cf06dcfd9f751932ebb036939234efb073b48c38b9b18d7c0e57",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch03_p004": {
+      "fingerprint": "cbfcf8b5ce28385263c1f6c0d135b6737c9da014ebe67833c345e3d4a1b4a8fd",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch03_p005": {
+      "fingerprint": "d68eb82e99c96cab9e32346f7e89516abbe7636894ac5fa5e2c08ea0453e41f1",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's mother": "mother",
+        "an enormous, thick-boned charwoman with white hair that flapped around her head": "cleaner",
+        "the maid": null,
+        "the two women": null
+      }
+    },
+    "metamorphosis_ch03_p006": {
+      "fingerprint": "845a6b6ece293119c058a04e573a6b07d55ea742ed8d0385ce623abc2f9742b0",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch03_p007": {
+      "fingerprint": "02c5086198e533106820ca484e0fc9f923a0030e5b091a7a3d3dd771ee462276",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "his father": "father",
+        "his mother": "mother"
+      }
+    },
+    "metamorphosis_ch03_p008": {
+      "fingerprint": "cae9ef29a2bbe2ff49d8738ed21042a715c97f067acd02c1beec2c97931f51af",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p009": {
+      "fingerprint": "08ace3168a34778e5f76b8b8ef7fea10e29418fcde19ad03eb89f22314cd42a3",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "Gregor's mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p010": {
+      "fingerprint": "4ea1a60a5b6291c1fa578ad0a710fbba744918bb7e706c2108429847db2cefeb",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "Gregor's sister": "grete",
+        "the charwoman": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p011": {
+      "fingerprint": "b9352899a5da5d8dd5a5112c3d95a672dd3218b64b634683cdd4970142b247b6",
+      "assignments": {
+        "Gregor": "gregor",
+        "the charwoman": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p012": {
+      "fingerprint": "a7801dbd8e69528629bad6058aab08d9cafe7fb7ba5e6998cc1588857dfa9dce",
+      "assignments": {
+        "Gregor": "gregor",
+        "the charwoman": "cleaner",
+        "three gentlemen": "lodgers"
+      }
+    },
+    "metamorphosis_ch03_p013": {
+      "fingerprint": "08a9f4c3c16b7b6aa7c3d20f784424a0f81be87b765388604c5d967c41310c50",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch03_p014": {
+      "fingerprint": "97a637aa496fe11753c99efdf5c422055a92a8d459b5f4820734e43f84922c9f",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch03_p015": {
+      "fingerprint": "7e43385fa09e6058a471acb867379878fc84e7a3453f814477e23db1be113f91",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch03_p016": {
+      "fingerprint": "27a8d34add1a9254bef46ba3c220f0246abe716a07e3d0a067b68bd1b8f42c7b",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "Gregor's mother": "mother"
+      }
+    },
+    "metamorphosis_ch03_p017": {
+      "fingerprint": "f8876ed6592aa7ee3d79f656f33b22d0aad750a9eb703edd4b900ef66fdb16b0",
+      "assignments": {
+        "Gregor": "gregor"
+      }
+    },
+    "metamorphosis_ch03_p018": {
+      "fingerprint": "669ec0a48fe1405aee8bcd2455b2f8905449d8c2c4a60e07f9da23ef83a9739a",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "the three gentlemen": "lodgers"
+      }
+    },
+    "metamorphosis_ch03_p019": {
+      "fingerprint": "574dc214db369673e2f025c5faafb811beb46a0fd1631e495b5ad8a1933b6dcf",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother",
+        "his sister": "grete",
+        "one of the gentlemen": null
+      }
+    },
+    "metamorphosis_ch03_p020": {
+      "fingerprint": "2a20682a2880188d533f175c53d49524e4264dff901666282e55c82ac37919b2",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "the three gentlemen": "lodgers"
+      }
+    },
+    "metamorphosis_ch03_p021": {
+      "fingerprint": "054a25b3bbefd3c71c5eec767b3df91913571761dd72af39eebd1a31336470f6",
+      "assignments": {
+        "Gregor": "gregor",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p022": {
+      "fingerprint": "31c19550dd5c792e58a6f75471883d2ef1d320fb2bad4585bac9022e429d15a5",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "Mr. Samsa": "father",
+        "his sister": "grete",
+        "the middle gentleman": "middle"
+      }
+    },
+    "metamorphosis_ch03_p023": {
+      "fingerprint": "f8bb34f4d0333d0ac53fb4d692574f578ad1bfbf75a5bc51c4e87b3b7a1c5ba2",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his sister": "grete",
+        "the three gentlemen": "lodgers"
+      }
+    },
+    "metamorphosis_ch03_p024": {
+      "fingerprint": "dd741a4f624fce8800db853abddfa10698806a7d51a971c14997c794d65aba2b",
+      "assignments": {
+        "Gregor's father": "father",
+        "Gregor's mother": "mother",
+        "the three gentlemen": "lodgers"
+      }
+    },
+    "metamorphosis_ch03_p025": {
+      "fingerprint": "4ab8975443e29b053c7016a65eca89ebe9d9d19626a5f4660243a1aba3a2a5b7",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "his mother": "mother",
+        "his two friends": null
+      }
+    },
+    "metamorphosis_ch03_p026": {
+      "fingerprint": "1dbc83273bd4ea8b1cc08fcf3e6618f1b558d8a1f0999668cf1af9248741f164",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p027": {
+      "fingerprint": "bac43231e1e31bc5ac9495155fe22c3682c9871d699b549352f5426ed84c35c7",
+      "assignments": {
+        "Gregor": "gregor",
+        "Gregor's father": "father",
+        "Gregor's sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p028": {
+      "fingerprint": "31b9f7e47eb9147acec4702f9f01e217dfb06eacb56e9cdd15a11a91a162f1c8",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p029": {
+      "fingerprint": "fbe59ccbbfe9daa73f16568c00d46e2b0be8a55d3e0a5c1adfcc2dedec995ac8",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p030": {
+      "fingerprint": "7d2ecdde680fac086333ab8bcd235ba3c27db84e7395ad7813116b1aedc65ea2",
+      "assignments": {
+        "Gregor": "gregor",
+        "his father": "father",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p031": {
+      "fingerprint": "6d6fa618ddae9602661143348230ea49860b46a8cc3274f5c6cc826793ee13ed",
+      "assignments": {
+        "Gregor": "gregor",
+        "his mother": "mother",
+        "his sister": "grete"
+      }
+    },
+    "metamorphosis_ch03_p032": {
+      "fingerprint": "47cac5494a06bb7bb8796ab5fb01638e4d5748168f37ba8053502a6aafc8d3ee",
+      "assignments": {
+        "Gregor": "gregor",
+        "the cleaner": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p033": {
+      "fingerprint": "20efc7cc7703e267185baa80015b7041cba342bc39b099d1f82cb4134b6c44b2",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "Mr. Samsa": "father",
+        "Mrs. Samsa": "mother",
+        "the cleaner": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p034": {
+      "fingerprint": "6bd5e7ae5e1c0bc4517fdf04c0a57d660dc29c6fa6347a687ac149c36a9dfdba",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "Mr. Samsa": "father",
+        "Mrs. Samsa": "mother"
+      }
+    },
+    "metamorphosis_ch03_p035": {
+      "fingerprint": "4ce3f031bfdf839ea74b42b79abb83dfd381d1b1458f53d89168eed59db8559b",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "Mrs. Samsa": "mother",
+        "the cleaner": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p036": {
+      "fingerprint": "46b6ac9355d1cec4bed1541e7eb88321ba4017dd276c9ad1d227410f7caa29e4",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "Mr. Samsa": "father"
+      }
+    },
+    "metamorphosis_ch03_p037": {
+      "fingerprint": "992fb7de390fc2d1168ed1c1d7a88f7f6d710fd3bb20cb82ea31554b0d5982e7",
+      "assignments": {
+        "Mr. Samsa": "father",
+        "his two friends": null,
+        "the man": null,
+        "the three gentlemen": "lodgers"
+      }
+    },
+    "metamorphosis_ch03_p038": {
+      "fingerprint": "780ba8fc3e4ec20fcca6d36d13894a6fbf389d4bd900f7dfbdb6acce4faee5b1",
+      "assignments": {
+        "Grete": "grete",
+        "Mr. Samsa": "father",
+        "Mrs. Samsa": "mother",
+        "the cleaner": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p039": {
+      "fingerprint": "28784f15419aaca42ad30ab0aa1d8e3444a63dba1589e54c4eea35136028a1af",
+      "assignments": {
+        "Grete": "grete",
+        "Mr. Samsa": "father",
+        "Mrs. Samsa": "mother",
+        "the cleaner": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p040": {
+      "fingerprint": "e1c6e96494d987b22868cfb2dd86c2db4832cfd5abfd2f3898afca04270cb3cc",
+      "assignments": {
+        "Mr. Samsa": "father",
+        "his daughter": "grete",
+        "his wife": "mother",
+        "the charwoman": "cleaner"
+      }
+    },
+    "metamorphosis_ch03_p041": {
+      "fingerprint": "b1bfbd0be4917abef9bb510a8b3ea504e1901085033e5bef5d50e3eb2b210fac",
+      "assignments": {
+        "Gregor": "gregor",
+        "Grete": "grete",
+        "Mrs. Samsa": "mother"
+      }
+    },
+    "metamorphosis_ch03_p042": {
+      "fingerprint": "30961a8814da5c21b5766dce8f2278873af25dcdd259ec2097a84a8316de7a94",
+      "assignments": {
+        "Grete": "grete",
+        "Mrs. Samsa": "mother"
+      }
+    }
+  },
+  "relations": [
+    {
+      "source_entity": "mother",
+      "target_entity": "gregor",
+      "label": "mère de",
+      "category": "family",
+      "evidence_chunk_id": "metamorphosis_ch01_p030",
+      "fingerprint": "3afaec656fc34b02bd55827e1b4aecbf466beab4d38525a1f24e973d7d4f20d8",
+      "evidence": "Gregor's mother, her hair still dishevelled from bed\ndespite the chief clerk's being there, looked at his father."
+    },
+    {
+      "source_entity": "father",
+      "target_entity": "gregor",
+      "label": "père de",
+      "category": "family",
+      "evidence_chunk_id": "metamorphosis_ch01_p031",
+      "fingerprint": "e62d91a37f32e370559c77c9e17a0bbcce836a5fff72e4deb9941e418adba41f",
+      "evidence": "for\nGregor's father, breakfast was the most important meal of the day and he\nwould stretch it out for several hours as he sat reading a number of different\nnewspapers."
+    },
+    {
+      "source_entity": "grete",
+      "target_entity": "gregor",
+      "label": "sœur de",
+      "category": "family",
+      "evidence_chunk_id": "metamorphosis_ch01_p026",
+      "fingerprint": "2bace4f9f4646dccaee47a2871fb102aac9404e1ddf403af5940f5ea102f5c22",
+      "evidence": "Grete! Grete!\"\nshe then cried. \"Mother?\" his sister called from the other side.\nThey communicated across Gregor's room."
+    },
+    {
+      "source_entity": "mother",
+      "target_entity": "grete",
+      "label": "mère de",
+      "category": "family",
+      "evidence_chunk_id": "metamorphosis_ch01_p026",
+      "fingerprint": "2bace4f9f4646dccaee47a2871fb102aac9404e1ddf403af5940f5ea102f5c22",
+      "evidence": "\"Oh, God!\" called his mother, who was already in tears, \"he\ncould be seriously ill and we're making him suffer. Grete! Grete!\"\nshe then cried. \"Mother?\" his sister called from the other side.\nThey communicated across Gregor's room."
+    },
+    {
+      "source_entity": "father",
+      "target_entity": "grete",
+      "label": "père de",
+      "category": "family",
+      "evidence_chunk_id": "metamorphosis_ch03_p036",
+      "fingerprint": "46b6ac9355d1cec4bed1541e7eb88321ba4017dd276c9ad1d227410f7caa29e4",
+      "evidence": "Then the door of the bedroom opened and Mr. Samsa appeared in his uniform with\nhis wife on one arm and his daughter on the other. All of them had been crying\na little; Grete now and then pressed her face against her father's arm."
+    },
+    {
+      "source_entity": "father",
+      "target_entity": "mother",
+      "label": "époux de",
+      "category": "family",
+      "evidence_chunk_id": "metamorphosis_ch03_p033",
+      "fingerprint": "20efc7cc7703e267185baa80015b7041cba342bc39b099d1f82cb4134b6c44b2",
+      "evidence": "Mr. and Mrs. Samsa sat upright there in their marriage bed and had to make an\neffort to get over the shock caused by the cleaner before they could grasp what\nshe was saying. But then, each from his own side, they hurried out of bed. Mr.\nSamsa threw the blanket over his shoulders, Mrs. Samsa just came out in her\nnightdress; and that is how they went into Gregor's room."
+    },
+    {
+      "source_entity": "mother",
+      "target_entity": "clerk",
+      "label": "parle à",
+      "category": "interaction",
+      "evidence_chunk_id": "metamorphosis_ch01_p019",
+      "fingerprint": "00dc4cd48dd00eedab4077845e538bc39bc3796fd565899967b70ed5d92b1327",
+      "evidence": "on his right, Gregor's\nsister whispered to him to let him know: \"Gregor, the chief clerk is\nhere.\" \"Yes, I know\", said Gregor to himself; but without\ndaring to raise his voice loud enough for his sister to hear him.\n\n\"Gregor\", said his father now from the room to his left, \"the\nchief clerk has come round and wants to know why you didn't leave on the\nearly train. We don't know what to say to him. And anyway, he wants to\nspeak to you personally. So please open up this door. I'm sure\nhe'll be good enough to forgive the untidiness of your room.\" Then\nthe chief clerk called \"Good morning, Mr. Samsa\". \"He\nisn't well\", said his mother to the chief clerk, while his father\ncontinued to speak through the door. \"He isn't well, please believe\nme. Why else would Gregor have missed a train! The lad only ever thinks about\nthe business. It nearly makes me cross the way he never goes out in the\nevenings; he's been in town for a week now but stayed home every evening.\nHe sits with us in the kitchen and just reads the paper or studies train\ntimetables. His idea of relaxation is working with his fretsaw. He's made\na little frame, for instance, it only took him two or three evenings,\nyou'll be amazed how nice it is; it's hanging up in his room;\nyou'll see it as soon"
+    },
+    {
+      "source_entity": "father",
+      "target_entity": "gregor",
+      "label": "menace",
+      "category": "interaction",
+      "evidence_chunk_id": "metamorphosis_ch01_p030",
+      "fingerprint": "3afaec656fc34b02bd55827e1b4aecbf466beab4d38525a1f24e973d7d4f20d8",
+      "evidence": "His father looked hostile, and clenched his\nfists as if wanting to knock Gregor back into his room."
+    },
+    {
+      "source_entity": "gregor",
+      "target_entity": "father",
+      "label": "supplie",
+      "category": "interaction",
+      "evidence_chunk_id": "metamorphosis_ch01_p038",
+      "fingerprint": "fc77f5f105dd7ce1544ea6b3559492b799b3d56a31ef37c2ac5d47984ec09e23",
+      "evidence": "his chin on\nthe banister, he looked back for the last time. Gregor made a run for him; he\nwanted to be sure of reaching him; the chief clerk must have expected\nsomething, as he leapt down several steps at once and disappeared; his shouts\nresounding all around the staircase. The flight of the chief clerk seemed,\nunfortunately, to put Gregor's father into a panic as well. Until then he\nhad been relatively self controlled, but now, instead of running after the\nchief clerk himself, or at least not impeding Gregor as he ran after him,\nGregor's father seized the chief clerk's stick in his right hand\n(the chief clerk had left it behind on a chair, along with his hat and\novercoat), picked up a large newspaper from the table with his left, and used\nthem to drive Gregor back into his room, stamping his foot at him as he went.\nGregor's appeals to his father were of no help, his appeals were simply\nnot understood, however much he humbly turned his head his father merely\nstamped his foot all the harder. Across the room, despite the chilly weather,\nGregor's mother had pulled open a window, leant far out of it and pressed\nher hands to her face. A strong draught of air flew in from the street towards\nthe stairway, the curtains flew up, the newspapers on the table fluttered and\nsome of them were blown onto the"
+    },
+    {
+      "source_entity": "father",
+      "target_entity": "mother",
+      "label": "explique les finances",
+      "category": "interaction",
+      "evidence_chunk_id": "metamorphosis_ch02_p015",
+      "fingerprint": "3c8d888607e482d56249e008e378874a34495b04d22cbfbfd6cc866a338f5446",
+      "evidence": "Even before the first day had come to an end, his father had explained to\nGregor's mother and sister what their finances and prospects were."
+    },
+    {
+      "source_entity": "boss",
+      "target_entity": "gregor",
+      "label": "emploie",
+      "category": "work",
+      "evidence_chunk_id": "metamorphosis_ch01_p005",
+      "fingerprint": "de24dd3ec926d6815ee45f0422340f66fc1b6805559c249d61826e2ea2dfd6e3",
+      "evidence": "from up there,\nespecially when you have to go right up close because the boss is hard of\nhearing. Well, there's still some hope; once I've got the money\ntogether to pay off my parents' debt to him—another five or six\nyears I suppose—that's definitely what I'll do. That's\nwhen I'll make the big change. First of all though, I've got to get\nup, my train leaves at five.\"\n\nAnd he looked over at the alarm clock, ticking on the chest of drawers.\n\"God in Heaven!\" he thought. It was half past six and the hands\nwere quietly moving forwards, it was even later than half past, more like\nquarter to seven. Had the alarm clock not rung? He could see from the bed that\nit had been set for four o'clock as it should have been; it certainly\nmust have rung. Yes, but was it possible to quietly sleep through that\nfurniture-rattling noise? True, he had not slept peacefully, but probably all\nthe more deeply because of that. What should he do now? The next train went at\nseven; if he were to catch that he would have to rush like mad and the\ncollection of samples was still not packed, and he did not at all feel\nparticularly fresh and lively. And even if he did catch the train he would not\navoid his boss's anger as the office assistant would have been there to\nsee the five"
+    },
+    {
+      "source_entity": "clerk",
+      "target_entity": "gregor",
+      "label": "demande des comptes",
+      "category": "work",
+      "evidence_chunk_id": "metamorphosis_ch01_p022",
+      "fingerprint": "0eb0fbd40d74fca3a0c90acc35d3d1af4103daeb38f94d1bf257e2ae104ada80",
+      "evidence": "The chief clerk now raised his voice, \"Mr. Samsa\", he called to\nhim, \"what is wrong? You barricade yourself in your room, give us no more\nthan yes or no for an answer, you are causing serious and unnecessary concern\nto your parents and you fail—and I mention this just by the way—you\nfail to carry out your business duties in a way that is quite unheard of.\nI'm speaking here on behalf of your parents and of your employer, and\nreally must request a clear and immediate explanation. I am astonished, quite\nastonished. I thought I knew you as a calm and sensible person, and now you\nsuddenly seem to be showing off with peculiar whims. This morning, your\nemployer did suggest a possible reason for your failure to appear, it's\ntrue—it had to do with the money that was recently entrusted to\nyou—but I came near to giving him my word of honour that that could not\nbe the right explanation. But now that I see your incomprehensible stubbornness\nI no longer feel any wish whatsoever to intercede on your behalf. And nor is\nyour position all that secure. I had originally intended to say all this"
+    },
+    {
+      "source_entity": "father",
+      "target_entity": "anna",
+      "label": "appelle",
+      "category": "interaction",
+      "evidence_chunk_id": "metamorphosis_ch01_p026",
+      "fingerprint": "2bace4f9f4646dccaee47a2871fb102aac9404e1ddf403af5940f5ea102f5c22",
+      "evidence": "\"Anna! Anna!\" his father called into\nthe kitchen through the entrance hall, clapping his hands, \"get a\nlocksmith here, now!\""
+    },
+    {
+      "source_entity": "cleaner",
+      "target_entity": "gregor",
+      "label": "menace",
+      "category": "interaction",
+      "evidence_chunk_id": "metamorphosis_ch03_p012",
+      "fingerprint": "a7801dbd8e69528629bad6058aab08d9cafe7fb7ba5e6998cc1588857dfa9dce",
+      "evidence": "Instead of being afraid, the\ncharwoman just lifted up one of the chairs from near the door and stood there\nwith her mouth open, clearly intending not to close her mouth until the chair\nin her hand had been slammed down into Gregor's back."
+    },
+    {
+      "source_entity": "middle",
+      "target_entity": "father",
+      "label": "interpelle",
+      "category": "interaction",
+      "evidence_chunk_id": "metamorphosis_ch03_p022",
+      "fingerprint": "31c19550dd5c792e58a6f75471883d2ef1d320fb2bad4585bac9022e429d15a5",
+      "evidence": "\"Mr. Samsa!\", shouted the middle gentleman to Gregor's\nfather, pointing, without wasting any more words, with his forefinger at Gregor\nas he slowly moved forward."
+    },
+    {
+      "source_entity": "middle",
+      "target_entity": "lodgers",
+      "label": "membre du groupe",
+      "category": "group",
+      "evidence_chunk_id": "metamorphosis_ch03_p022",
+      "fingerprint": "31c19550dd5c792e58a6f75471883d2ef1d320fb2bad4585bac9022e429d15a5",
+      "evidence": "\"Mr. Samsa!\", shouted the middle gentleman to Gregor's\nfather, pointing, without wasting any more words, with his forefinger at Gregor\nas he slowly moved forward. The violin went silent, the middle of the three\ngentlemen first smiled at his two friends, shaking his head, and then looked\nback at Gregor."
+    }
+  ]
+}
