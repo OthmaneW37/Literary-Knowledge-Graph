@@ -118,8 +118,7 @@ class HybridRetriever:
         # 2. Retrieval lexical
         # -----------------------------------
 
-        # With a model reranker, cast a wider net: it reads every candidate anyway.
-        depth = max(top_k * 2, 20) if self.llm_reranker is not None else top_k * 2
+        depth = top_k * 2
         lexical_passages: list[Passage] = []
 
         if analysis.use_lexical:

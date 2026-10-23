@@ -20,7 +20,7 @@ SYSTEM = (
 )
 
 
-def focused_excerpt(probe: str, text: str, max_chars: int = 360) -> str:
+def focused_excerpt(probe: str, text: str, max_chars: int = 480) -> str:
     """Sentences overlapping the probe, with their predecessor for context."""
     terms = set(tokenize(probe))
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", re.sub(r"\s+", " ", text)) if s.strip()]
@@ -33,7 +33,7 @@ def focused_excerpt(probe: str, text: str, max_chars: int = 360) -> str:
 class LLMReranker:
     version = "llm-listwise-v1"
 
-    def __init__(self, model: str, provider, keep_alive: str = "15m", candidates: int = 30, num_ctx: int = 8192) -> None:
+    def __init__(self, model: str, provider, keep_alive: str = "15m", candidates: int = 20, num_ctx: int = 8192) -> None:
         self.model = model
         self.provider = provider
         self.keep_alive = keep_alive
