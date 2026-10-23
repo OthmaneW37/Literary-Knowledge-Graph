@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
+import threading
 from dataclasses import replace
 from pathlib import Path
 
@@ -48,6 +49,8 @@ class SemanticRetriever:
         self.cache_path = self.cache_dir / f"{safe_model_name}.npz"
         self._vectors: np.ndarray | None = None
         self._ready = False
+        self._prepare_lock = threading.Lock()
+        self.progress: tuple[int, int] = (0, 0)
 
     @staticmethod
     def _document_text(passage: Passage) -> str:
@@ -122,10 +125,20 @@ class SemanticRetriever:
         )
         temporary_path.replace(self.cache_path)
 
+    @property
+    def ready(self) -> bool:
+        return self._ready and self._vectors is not None
+
     def prepare(self, force: bool = False, progress=None) -> int:
         """Build or refresh the vector cache and return its passage count."""
-        if not force and self._ready and self._vectors is not None:
+        if not force and self.ready:
             return len(self._vectors)
+        with self._prepare_lock:
+            if not force and self.ready:
+                return len(self._vectors)
+            return self._prepare(force, progress)
+
+    def _prepare(self, force: bool = False, progress=None) -> int:
 
         fingerprints = [self._fingerprint(passage) for passage in self.index.passages]
         cached = {} if force else self._load_cache()
@@ -149,8 +162,9 @@ class SemanticRetriever:
                 raise ValueError("Ollama returned an unexpected embedding batch size")
             for position, vector in zip(batch_positions, batch_vectors):
                 vectors_by_position[position] = vector
+            self.progress = (min(start + len(batch_positions), len(missing_positions)), len(missing_positions))
             if progress:
-                progress(min(start + len(batch_positions), len(missing_positions)), len(missing_positions))
+                progress(*self.progress)
 
         if not vectors_by_position:
             raise ValueError("The literary index contains no passages")
@@ -180,18 +194,37 @@ class SemanticRetriever:
         top_k: int = 6,
         max_chapter: int | None = None,
     ) -> list[Passage]:
-        self.prepare()
-        if self._vectors is None or top_k < 1:
-            return []
+        return self.retrieve_many([query], work_ids=work_ids, top_k=top_k, max_chapter=max_chapter)[0]
 
-        query_vector = self._embed([f"{QUERY_INSTRUCTION}{query}"])[0]
-        if self._vectors.shape[1] != query_vector.shape[0]:
+    def retrieve_many(
+        self,
+        queries: list[str],
+        work_ids: list[str] | None = None,
+        top_k: int = 6,
+        max_chapter: int | None = None,
+        documents: tuple[str, ...] | list[str] = (),
+    ) -> list[list[Passage]]:
+        """Rank passages for several probes with a single embedding call.
+
+        `queries` get the retrieval instruction; `documents` are hypothetical
+        passages, embedded like the indexed text so they match it directly.
+        """
+        probes = [f"{QUERY_INSTRUCTION}{query}" for query in queries] + [f"Passage: {text}" for text in documents]
+        if not self.ready and self._prepare_lock.locked():
+            # A newly opened book is being embedded in the background: answer
+            # now with keyword search instead of waiting for every vector.
+            return [[] for _ in probes]
+        self.prepare()
+        if self._vectors is None or top_k < 1 or not probes:
+            return [[] for _ in probes]
+
+        probe_vectors = self._embed(probes)
+        if self._vectors.shape[1] != probe_vectors.shape[1]:
             # The local tag may have been updated to an embedding with a new
             # dimension. Refresh the cache automatically instead of leaving
             # semantic search permanently disabled.
             self.prepare(force=True)
-            query_vector = self._embed([f"{QUERY_INSTRUCTION}{query}"])[0]
-        scores = self._vectors @ query_vector
+            probe_vectors = self._embed(probes)
         selected_works = set(self.index.works if work_ids is None else work_ids)
         eligible = [
             position
@@ -199,8 +232,11 @@ class SemanticRetriever:
             if passage.work_id in selected_works
             and SpoilerPolicy.allows(passage.chapter, max_chapter)
         ]
-        eligible.sort(key=lambda position: (-float(scores[position]), position))
-        return [
-            replace(self.index.passages[position], score=round(float(scores[position]), 6))
-            for position in eligible[:top_k]
-        ]
+        rankings = []
+        for scores in probe_vectors @ self._vectors.T:
+            ordered = sorted(eligible, key=lambda position: (-float(scores[position]), position))
+            rankings.append([
+                replace(self.index.passages[position], score=round(float(scores[position]), 6))
+                for position in ordered[:top_k]
+            ])
+        return rankings

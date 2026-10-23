@@ -36,8 +36,8 @@ current_budget = ContextVar('narrativelens_budget', default=None)
 
 
 def configured_budget():
-    return RequestBudget(seconds=max(1, float(os.getenv('REQUEST_TIMEOUT_SECONDS', '60'))),
-        max_model=max(1, int(os.getenv('MAX_MODEL_CALLS_PER_REQUEST', '6'))),
+    return RequestBudget(seconds=max(1, float(os.getenv('REQUEST_TIMEOUT_SECONDS', '120'))),
+        max_model=max(1, int(os.getenv('MAX_MODEL_CALLS_PER_REQUEST', '10'))),
         max_mcp=max(1, int(os.getenv('MAX_MCP_CALLS_PER_REQUEST', '3'))))
 
 

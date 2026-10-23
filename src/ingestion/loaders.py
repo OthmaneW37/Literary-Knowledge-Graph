@@ -71,7 +71,11 @@ class DocumentLoader:
         elif suffix == ".docx":
             document = self._load_docx(content)
         else:
-            document = LoadedDocument(self._decode_text(content))
+            text = self._decode_text(content)
+            if suffix == ".md":
+                # Headings stay on their own line (chapter detection) without "#" marks in quotes.
+                text = re.sub(r"(?m)^[ \t]*#{1,6}[ \t]+", "", text)
+            document = LoadedDocument(text)
 
         if len(document.text) > self.MAX_EXTRACTED_CHARS:
             raise DocumentLoadError("Le texte extrait dépasse la limite de sécurité de 8 millions de caractères.")

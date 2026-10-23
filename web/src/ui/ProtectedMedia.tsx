@@ -3,7 +3,7 @@ import {useEffect,useState,type ImgHTMLAttributes} from 'react'
 function useMedia(src:string){
   const [url,setUrl]=useState('')
   useEffect(()=>{
-    if(!src.startsWith('/api/visuals/')){setUrl(src);return}
+    if(!src.startsWith('/api/')){setUrl(src);return}
     const controller=new AbortController();let objectUrl=''
     setUrl('')
     const token=localStorage.getItem('narrativelens:token')

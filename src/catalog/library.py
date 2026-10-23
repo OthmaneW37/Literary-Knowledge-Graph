@@ -43,7 +43,7 @@ class LibraryImporter:
             "title": book.title,
             "author": book.author_display,
             "language": book.languages[0] if book.languages else "",
-            "source": "Project Gutenberg via Gutendex",
+            "source": "Project Gutenberg",
             "source_url": f"https://www.gutenberg.org/ebooks/{book.provider_id}",
             "provider": book.provider,
             "provider_id": book.provider_id,
@@ -63,6 +63,19 @@ class LibraryImporter:
             suffix=downloaded.suffix,
             record=record,
         )
+
+    def install_wikisource(self, work_id: str, book: dict) -> InstalledBook:
+        """Index a work assembled from Wikisource pages (Markdown, one heading per part)."""
+        record = {
+            "work_id": work_id, "title": book["title"], "author": book["author"],
+            "language": book["language"], "source": "Wikisource", "source_url": book["source_url"],
+            "provider": "wikisource", "provider_id": f"{book['language']}:{book['title']}",
+            "raw_filename": f"{work_id}.md", "cover_url": "",
+            "metadata_sources": [{"source_name": "Wikisource", "source_url": book["source_url"], "summary": "",
+                                  "subjects": [], "people": [], "retrieved_at": datetime.now(timezone.utc).isoformat()}],
+        }
+        return self._install_content(work_id=work_id, title=book["title"], content=book["text"].encode("utf-8"),
+                                     suffix=".md", record=record)
 
     def install_upload(
         self,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 import logging
 import os
 import re
@@ -67,8 +68,12 @@ class HybridRetriever:
         min_lexical_coverage: float = 0.30,
         rerank: bool = False,
         learned_reranker=None,
+        expander=None,
+        llm_reranker=None,
     ) -> None:
 
+        self.expander = expander
+        self.llm_reranker = llm_reranker
         self.lexical = lexical
         self.analyzer = analyzer
         self.graph = graph
@@ -103,11 +108,18 @@ class HybridRetriever:
             question,
             history=history,
         )
+        respelled = self._respell_names(analysis.entities, work_ids)
+        if respelled:
+            # "Aliocha" in a French question is "Alyosha" in the English text.
+            analysis.rewritten_query = f"{analysis.rewritten_query} {' '.join(respelled.values())}"
+            analysis.entities = [" ".join(respelled.get(t, t) for t in tokenize(e)) for e in analysis.entities]
 
         # -----------------------------------
         # 2. Retrieval lexical
         # -----------------------------------
 
+        # With a model reranker, cast a wider net: it reads every candidate anyway.
+        depth = max(top_k * 2, 20) if self.llm_reranker is not None else top_k * 2
         lexical_passages: list[Passage] = []
 
         if analysis.use_lexical:
@@ -115,19 +127,36 @@ class HybridRetriever:
             lexical_passages = self.lexical.retrieve(
                 analysis.rewritten_query,
                 work_ids=work_ids,
-                top_k=top_k * 2,
+                top_k=depth,
                 max_chapter=max_chapter,
             )
 
+        # Search probes in the edition's language (keywords + hypothetical
+        # sentence). They widen recall only; evidence still comes from the text.
+        expansion = None
+        if self.expander is not None and index is not None:
+            languages = {index.works[w].language for w in (work_ids or index.works) if w in index.works}
+            expansion = self.expander.expand(question, languages.pop() if len(languages) == 1 else "en")
+        expanded_lexical: list[Passage] = []
+        if expansion and expansion.keywords and analysis.use_lexical:
+            expanded_lexical = self.lexical.retrieve(
+                expansion.keywords, work_ids=work_ids, top_k=depth, max_chapter=max_chapter,
+            )
+
         semantic_passages: list[Passage] = []
+        extra_semantic: list[list[Passage]] = []
         if self.semantic:
+            semantic_query = question + (" " + " ".join(analysis.entities) if history else "")
             try:
-                semantic_passages = self.semantic.retrieve(
-                    question + (" " + " ".join(analysis.entities) if history else ""),
-                    work_ids=work_ids,
-                    top_k=top_k * 2,
-                    max_chapter=max_chapter,
-                )
+                if hasattr(self.semantic, "retrieve_many"):
+                    semantic_passages, *extra_semantic = self.semantic.retrieve_many(
+                        [semantic_query], work_ids=work_ids, top_k=depth, max_chapter=max_chapter,
+                        documents=[expansion.passage] if expansion and expansion.passage else [],
+                    )
+                else:
+                    semantic_passages = self.semantic.retrieve(
+                        semantic_query, work_ids=work_ids, top_k=depth, max_chapter=max_chapter,
+                    )
             except Exception as exc:
                 logging.getLogger(__name__).warning(
                     "Semantic retrieval unavailable; using BM25 only: %s", exc
@@ -139,15 +168,28 @@ class HybridRetriever:
             semantic_passages,
             entities=analysis.entities,
             work_ids=work_ids,
+            expanded=(expansion.keywords, expanded_lexical) if expansion else None,
         ):
             passages = []
         else:
-            passages = self._reciprocal_rank_fusion(
-                lexical_passages,
-                semantic_passages,
-                top_k * 2 if self.rerank else top_k,
-            )
-            if self.rerank:
+            if self.llm_reranker is not None:
+                pool = self._fuse_rankings(
+                    [lexical_passages, semantic_passages, expanded_lexical, *extra_semantic],
+                    max(self.llm_reranker.candidates, top_k),
+                )
+                try:
+                    passages = self.llm_reranker.rerank(question, pool, top_k, probe=expansion.keywords if expansion else "")
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("LLM reranker failed; using local diversification: %s", exc)
+                    passages = diversify(pool, top_k)
+            else:
+                passages = self._fuse_rankings(
+                    [lexical_passages, semantic_passages, expanded_lexical, *extra_semantic],
+                    top_k * 2 if self.rerank else top_k,
+                )
+            # The targeted rules below (profession, introductions, openings)
+            # apply after either reranker.
+            if self.rerank and self.llm_reranker is None:
                 reranker = self.learned_reranker
                 provider = os.getenv("RERANKER_PROVIDER", "diversify").casefold()
                 if reranker is None and provider in {"cross_encoder", "trained"}:
@@ -292,12 +334,17 @@ class HybridRetriever:
         rank_constant: int = 60,
     ) -> list[Passage]:
         """Fuse ranks without assuming BM25 and cosine scores share a scale."""
-        if not semantic:
-            return lexical[:top_k]
+        return HybridRetriever._fuse_rankings([lexical, semantic], top_k, rank_constant)
+
+    @staticmethod
+    def _fuse_rankings(rankings: list[list[Passage]], top_k: int, rank_constant: int = 60) -> list[Passage]:
+        rankings = [ranking for ranking in rankings if ranking]
+        if len(rankings) <= 1:
+            return (rankings[0] if rankings else [])[:top_k]
         scores: dict[str, float] = {}
         passages: dict[str, Passage] = {}
         first_position: dict[str, int] = {}
-        for result_list in (lexical, semantic):
+        for result_list in rankings:
             for rank, passage in enumerate(result_list, start=1):
                 passages[passage.chunk_id] = passage
                 first_position.setdefault(passage.chunk_id, len(first_position))
@@ -320,8 +367,12 @@ class HybridRetriever:
         semantic: list[Passage],
         entities: list[str] | None = None,
         work_ids: list[str] | None = None,
+        expanded: tuple[str, list[Passage]] | None = None,
     ) -> bool:
         index = getattr(self.lexical, "index", None)
+        # A bare initial such as "K" has no searchable term; it cannot prove
+        # that a character is absent from the selected books.
+        entities = [entity for entity in entities or [] if tokenize(entity)]
         if entities and index is not None:
             selected = set(index.works if work_ids is None else work_ids)
             selected_passages = [
@@ -339,6 +390,13 @@ class HybridRetriever:
                 ):
                     entity_present = True
                     break
+            if not entity_present and expanded:
+                # A translated spelling ("Aliocha" for "Alyosha") is absent as
+                # typed; accept it when every proper name of the edition-language
+                # rewrite exists in the books and the rewrite matches a passage.
+                names = {term for word in re.findall(r"\b[A-Z][\w'’-]+", expanded[0]) for term in tokenize(word)}
+                corpus_terms = set().union(*(set(tokenize(p.text)) for p in expanded[1])) if expanded[1] else set()
+                entity_present = bool(names) and names <= corpus_terms and self._covers(expanded[0], expanded[1])
             # Vector similarity alone can be deceptively high for a name
             # absent from all selected novels (e.g. Raskolnikov in Kafka).
             if not entity_present and (not semantic or semantic[0].score < 0.65):
@@ -351,7 +409,47 @@ class HybridRetriever:
             coverage = len(query_terms & set(tokenize(passage.text))) / len(query_terms)
             if coverage >= self.min_lexical_coverage:
                 return True
+        if expanded and self._covers(expanded[0], expanded[1]):
+            return True
         return bool(semantic and semantic[0].score >= self.min_semantic_score)
+
+    def _respell_names(self, entities: list[str], work_ids: list[str] | None) -> dict[str, str]:
+        """Map name spellings absent from the selected books to their closest spelling in them.
+
+        Only names (not ordinary words) are respelled, only within the same
+        first letter and similar length, so an absent character (Raskolnikov in
+        Kafka) finds no neighbour and is still refused.
+        """
+        index = getattr(self.lexical, "index", None)
+        postings = getattr(index, "_postings", None)
+        if not entities or not postings:
+            return {}
+        selected = set(index.works if work_ids is None else work_ids)
+        passages = index.passages
+
+        def in_books(term: str) -> int:
+            return sum(1 for position in postings.get(term, ()) if passages[position].work_id in selected)
+
+        respelled = {}
+        for term in {t for entity in entities for t in tokenize(entity) if len(t) >= 4}:
+            if in_books(term):
+                continue
+            candidates = [
+                (difflib.SequenceMatcher(None, term, word).ratio(), in_books(word), word)
+                for word in postings if word[:1] == term[:1] and abs(len(word) - len(term)) <= 2
+            ]
+            best = max((c for c in candidates if c[0] >= 0.7 and c[1]), default=None)
+            if best:
+                respelled[term] = best[2]
+        return respelled
+
+    def _covers(self, keywords: str, passages: list[Passage]) -> bool:
+        """Generated keywords are broader than the question, so they must match more strictly."""
+        terms = set(tokenize(keywords))
+        return bool(terms) and any(
+            len(terms & set(tokenize(passage.text))) / len(terms) >= max(0.5, self.min_lexical_coverage)
+            for passage in passages
+        )
 
     @staticmethod
     def _evidence_chapter(chunk_id: str | None) -> int | None:

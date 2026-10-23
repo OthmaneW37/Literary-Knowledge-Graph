@@ -16,7 +16,7 @@ PROMPT, PROMPT_VERSION = load_prompt("visual_analysis_v1", "Describe only what i
 
 class OllamaVisionProvider:
     def __init__(self, model: str | None = None, host: str | None = None, timeout: float = 120) -> None:
-        self.model = model or os.getenv("VLM_MODEL", "qwen3.5:4b-q4_K_M")
+        self.model = model or os.getenv("VLM_MODEL", "qwen3.5:9b")
         self.client = ollama.Client(host=host or os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"), timeout=timeout)
 
     def analyze(self, image_path: str | Path, question: str = "") -> VisualObservation:

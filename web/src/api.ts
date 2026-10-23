@@ -7,7 +7,7 @@ export type Book = {
 export type Passage = {
   work_id: string; work_title: string; author: string; chapter: number | string;
   chunk_id: string; text: string; score: number; section: string; page: number | null;
-  pages: number[]; citation_label: string;
+  pages: number[]; citation_label: string; highlight?: number[]|null;
 }
 export type Edge = {
   source: string; target: string; label: string; evidence_chunk_id: string;
@@ -30,17 +30,36 @@ export type Message = {
   visual_prompt_version?: string|null; reranker_version?: string; index_version?: string;
   visualization?: {title?: string; nodes?: {id: string; label: string; kind: string}[]; edges?: {source: string; target: string; label: string; evidence_chunk_id: string}[]};
   elapsed_ms?: number; used_model?: boolean;
+  answer_kind?: 'answered'|'quoted'|'fallback'|'premise_rejected'|'spoiler_guarded'|'abstained';
 }
 export type CatalogBook = {
   provider_id: number; title: string; author: string; languages: string[];
   language_display: string; subjects: string[]; summary: string; cover_url: string; download_count: number;
 }
 export type DiscoveredBook = {
-  provider:'gutendex'|'openlibrary';provider_id:string;title:string;author:string;languages:string[];
+  provider:'gutendex'|'openlibrary'|'wikisource';provider_id:string;title:string;author:string;languages:string[];work_id?:string;
   cover_url:string;summary:string;subjects:string[];people:string[];first_publish_year?:number|null;
   source_name:string;source_url:string;can_download:boolean;format:string;anna_url:string;
 }
-export type DiscoveryResult = {books:DiscoveredBook[];count:number;page:number;has_next:boolean;query:string;warnings:string[];anna_url:string}
+export type EvalCheck = {name:string;passed:boolean;detail:string}
+export type EvalCitation = {work_id:string;work_title:string;chapter:number|string;chunk_id:string;text:string;page:number|null;citation_label:string}
+export type EvalResult = {
+  scenario_id:string;category:string;question:string;outcome:'answered'|'quoted'|'fallback'|'premise_rejected'|'spoiler_guarded'|'abstained';
+  outcome_label:string;passed:boolean;checks:EvalCheck[];elapsed_ms:number;model:string;ran_at:string;
+  answer:string;status:string;citations:EvalCitation[];used_model:boolean;error:string|null;
+  visual_observation?:{ocr_text:string;visual_description:string}|null;
+}
+export type EvalScenario = {
+  id:string;category:string;title:string;question:string;work_ids:string[];max_chapter:number|null;mode:string;
+  expect:'answer'|'abstain'|'reject_premise'|'safe';expected:string;gold:{work_id:string;contains:string}[];
+  must_not_include:string[];image:string|null;showcase:boolean;available:boolean;last_result:EvalResult|null;
+}
+export type EvalCategory = {label:string;icon:string;goal:string}
+export type EvalSummary = {total:number;passed:number;errors:number;by_category:Record<string,{passed:number;total:number}>;median_ms:number|null}
+export type EvalRun = {run_id:string;started_at:string;finished_at:string;state:string;model:string;scenario_count:number;summary:EvalSummary}
+export type EvalProgress = {state:'idle'|'running'|'done'|'cancelled'|'failed';run_id?:string;done?:number;total?:number;passed?:number;current?:string|null;error?:string}
+export type OpenJob = {job_id:string;provider_id:number|string;provider:'gutenberg'|'wikisource';title:string;state:'queued'|'downloading'|'indexing'|'ready'|'done'|'failed';stage:string;work_id:string|null;already_installed:boolean;embedded:number;to_embed:number;error:string|null;warning:string|null}
+export type DiscoveryResult ={books:DiscoveredBook[];count:number;page:number;has_next:boolean;query:string;warnings:string[];anna_url:string}
 const API = '/api'
 
 export class ApiError extends Error { constructor(message:string, public status:number) { super(message) } }
@@ -113,4 +132,12 @@ export const api = {
   archiveConversation: (id: string) => request(`/conversations/${id}/archive`, {method: 'POST'}),
   health: () => request<{ok: boolean; model?: string; ollama: boolean; neo4j: boolean; auth_enabled?:boolean}>('/health'),
   embeddings: () => request<{count: number; embedding_model: string}>('/insights/embeddings', {method: 'POST'}),
+  openBook: (book:Pick<DiscoveredBook,'provider'|'provider_id'>) => request<OpenJob>('/catalog/open',json({provider:book.provider==='wikisource'?'wikisource':'gutenberg',provider_id:book.provider==='wikisource'?book.provider_id:Number(book.provider_id)})),
+  translate: (text:string) => request<{translation:string;target:string;machine_translation:boolean}>('/translate',json({text,target:'fr'})),
+  openJob: (job_id:string) => request<OpenJob>(`/catalog/jobs/${encodeURIComponent(job_id)}`),
+  evaluation: () => request<{categories:Record<string,EvalCategory>;scenarios:EvalScenario[];progress:EvalProgress;runs:EvalRun[]}>('/evaluation/scenarios'),
+  runScenario: (id:string) => request<EvalResult>(`/evaluation/scenarios/${encodeURIComponent(id)}/run`,{method:'POST'}),
+  startEvaluation: (scenario_ids:string[]|null) => request<EvalProgress>('/evaluation/runs',json({scenario_ids})),
+  evaluationProgress: () => request<EvalProgress>('/evaluation/runs/current'),
+  cancelEvaluation: () => request<EvalProgress>('/evaluation/runs/cancel',{method:'POST'}),
 }

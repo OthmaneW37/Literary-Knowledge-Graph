@@ -8,7 +8,8 @@ Les observations d’image servent à guider la recherche. Elles ne deviennent p
 
 ## Fonctionnalités
 
-- Import EPUB, TXT, Markdown, PDF avec texte et DOCX.
+- **Accès direct à plus de 75 000 livres du domaine public** : l’onglet **Explorer** cherche dans le catalogue officiel de Project Gutenberg (titre, auteur, en français ou en anglais, tolérant aux accents et translittérations : « les frères Karamazov », « Dostoïevski »). « Ouvrir le livre » le télécharge, l’indexe et l’ouvre dans la discussion en quelques secondes ; la recherche sémantique se termine en arrière-plan.
+- Import de fichiers personnels EPUB, TXT, Markdown, PDF avec texte et DOCX.
 - Extraction locale d’images intégrées EPUB, PDF et DOCX, avec identifiant, livre, repère de chapitre/page, légende, contexte, OCR disponible et chemin local.
 - Chat texte historique conservé, avec BM25, embeddings Ollama, fusion RRF, graphe et réponse extractive de secours.
 - Question texte + image JPG, PNG ou WebP, prévisualisation, analyse VLM optionnelle et observations marquées comme incertaines.
@@ -19,6 +20,9 @@ Les observations d’image servent à guider la recherche. Elles ne deviennent p
 - Serveur MCP optionnel pour la progression, les métadonnées et les annotations avec confirmation.
 - Workflow LangGraph optionnel; chemin Python direct compatible si LangGraph n’est pas installé.
 - Cross-encoder multilingue optionnel et scripts pour construire un jeu réel, entraîner et évaluer un reranker.
+- **Banc d’essai intégré** : 76 scénarios annotés (faits, personnages, anti-spoiler, hors corpus, fausse prémisse, injection, comparaison, image), jouables un par un en direct dans l’onglet **Évaluation** ou en série, avec verdicts expliqués et historique des scores.
+- Recherche renforcée par le modèle local : reformulation de la question dans la langue de l’édition (mots-clés + phrase hypothétique) et reclassement des 20 meilleurs candidats. Ces étapes ne servent qu’à trouver les passages ; la réponse reste vérifiée sur le texte.
+- Garde anti-spoiler explicite pour les questions sur la fin du livre et correction des questions à fausse prémisse.
 
 ## Architecture
 
@@ -49,16 +53,12 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev,legacy-ui]"
 Copy-Item .env.example .env
-ollama pull qwen3.5:4b-q4_K_M
+ollama pull qwen3.5:9b
 ollama pull qwen3-embedding:0.6b
 literary-library embeddings
 ```
 
-Le VLM est facultatif. Pour l’analyse locale d’images :
-
-```powershell
-ollama pull qwen3.5:4b-q4_K_M
-```
+Le modèle par défaut est **Qwen 3.5 9B** (6,6 Go, texte et images) : il tient avec le modèle d’embeddings dans une carte graphique de 12 à 16 Go. Sur une machine plus modeste, `OLLAMA_MODEL=qwen3.5:4b-q4_K_M` reste possible, avec des réponses nettement moins fiables (voir [docs/evaluation-results.md](docs/evaluation-results.md)). Le même modèle sert à l’analyse d’images (`VLM_MODEL`).
 
 Pour les embeddings visuels et OCR local, installer seulement les extras nécessaires :
 
@@ -101,6 +101,14 @@ Ouvre `http://127.0.0.1:5173`. L’API et ses schémas sont sur `http://127.0.0.
 
 Active l’authentification dans `.env` avec `AUTH_ENABLED=true` et un `JWT_SECRET` aléatoire d’au moins 32 caractères; `APPROVAL_SECRET` permet d’utiliser une clé distincte pour les approbations. Génère une clé temporaire de session PowerShell avec `$env:JWT_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`. Les comptes locaux se créent depuis l’écran de connexion; l’API expose aussi `/api/auth/register` et `/api/auth/login`. Sans cette option, le mode local historique reste actif.
 
+## Trouver un livre
+
+Onglet **Explorer** (ou le bouton ＋ de la bibliothèque) : tape un titre ou un auteur, puis **Ouvrir le livre**. Le catalogue officiel de Project Gutenberg (`pg_catalog.csv.gz`, environ 80 000 entrées) est téléchargé une fois, mis en cache dans `data/library/catalog/` et rafraîchi chaque semaine ; la recherche fonctionne ensuite même si le miroir Gutendex est hors service. Le livre est téléchargé depuis gutenberg.org, découpé et indexé, puis s’ouvre dans la discussion. Les embeddings sont calculés en arrière-plan (progression dans la barre du haut) ; pendant ce temps la recherche par mots-clés et la reformulation par le modèle local répondent déjà.
+
+**En français** : pour une recherche en français, Explorer interroge aussi **Wikisource** (API MediaWiki) et place ses textes en premier. Une œuvre est assemblée depuis sa page et ses sous-pages (« Livre I », « Livre II »…), par exemple *Les Frères Karamazov* dans la traduction Halpérine-Kaminsky et Morice (162 000 mots, environ 15 s). Une page qui ne liste que des éditions est signalée : il suffit de choisir une édition précise. Quand seul un texte anglais existe, chaque passage (sources d’une réponse, lecture par chapitre) propose **Traduire en français** : traduction automatique par le modèle local, clairement signalée, le texte original restant la preuve citée.
+
+Les œuvres encore protégées par le droit d’auteur apparaissent comme fiches Open Library sans texte : si tu possèdes le fichier, **Importer un fichier personnel**.
+
 ## Import et questions multimodales
 
 Depuis **Ajouter un livre**, importe un EPUB/PDF/DOCX contenant texte et images. Les images extraites restent dans `data/library/visuals`; leurs métadonnées sont dans `data/processed/*.visuals.json`. Les pages PDF gardent leurs numéros physiques. Pour une BD, chaque page image est l’unité visuelle; la segmentation des cases n’est pas faite.
@@ -139,6 +147,17 @@ python -m rag.evaluate --output data/library/evaluation-latest.json
 ```
 
 Aucun entraînement ni score de benchmark n’est inclus ou prétendu. Les scripts écrivent uniquement les résultats mesurés sur les données fournies.
+
+## Banc d’essai
+
+L’onglet **Évaluation** de l’interface rejoue des scénarios annotés par le même chemin que la discussion et affiche, pour chacun, la réponse, ses citations et chaque contrôle réussi ou échoué. En ligne de commande :
+
+```powershell
+python -m evaluation validate   # chaque citation de référence existe mot pour mot et respecte la limite de chapitre
+python -m evaluation run        # joue les 76 scénarios et enregistre le résultat
+```
+
+Méthode, catégories et limites : [docs/evaluation.md](docs/evaluation.md). Résultats mesurés avant et après les améliorations : [docs/evaluation-results.md](docs/evaluation-results.md).
 
 ## Tests et vérifications
 

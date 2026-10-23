@@ -99,3 +99,61 @@ test('long names wrap instead of losing the distinguishing last word',()=>{
   assert.equal(wrapName(label,15).join(' '),label)
   assert.ok(wrapName(label,15).length>1)
 })
+
+const {runDelta,verdictMark,ago}=await loadSource('../src/ui/evaluationStats.ts')
+const run=(passed,state='done',count=76)=>({state,scenario_count:count,summary:{passed}})
+
+test('evaluation delta compares the two latest complete runs of the same set',()=>{
+  assert.equal(runDelta([run(60),run(40,'cancelled'),run(34)]),26)
+  assert.equal(runDelta([run(60)]),null)
+  assert.equal(runDelta([run(60,'done',76),run(30,'done',70)]),null)
+})
+test('evaluation verdict marks and relative times read naturally',()=>{
+  assert.equal(verdictMark(null),'–')
+  assert.equal(verdictMark({passed:true}),'✓')
+  assert.equal(verdictMark({passed:false}),'✗')
+  const now=Date.parse('2026-10-22T12:00:00Z')
+  assert.equal(ago('2026-10-22T11:58:00Z',now),'il y a 2 min')
+  assert.equal(ago('2026-10-22T09:00:00Z',now),'il y a 3 h')
+})
+test('a demo scenario run posts to its own route',async t=>{
+  const calls=[]
+  mockNetwork(t,async(path,init)=>{calls.push([path,init?.method]);return Response.json({passed:true})})
+  await api.runScenario('spoil-01')
+  await api.startEvaluation(null)
+  assert.deepEqual(calls,[['/api/evaluation/scenarios/spoil-01/run','POST'],['/api/evaluation/runs','POST']])
+})
+
+const {localMatches,openProgress}=await loadSource('../src/ui/exploreSearch.ts')
+test('explorer finds owned books by title or author, ignoring accents and case',()=>{
+  const library=[{id:'a',title:'Les Misérables',author:'Victor Hugo',archived:false},{id:'b',title:'The Trial',author:'Franz Kafka',archived:false},{id:'c',title:'Old',author:'Hugo',archived:true}]
+  assert.deepEqual(localMatches(library,'miserables').map(b=>b.id),['a'])
+  assert.deepEqual(localMatches(library,'HUGO').map(b=>b.id),['a'])
+  assert.deepEqual(localMatches(library,'de'),[])
+})
+test('opening progress moves from download to embeddings',()=>{
+  assert.equal(openProgress(undefined),0)
+  assert.equal(openProgress({state:'downloading'}),15)
+  assert.equal(openProgress({state:'ready',embedded:30,to_embed:60}),70)
+  assert.equal(openProgress({state:'done'}),100)
+})
+test('opening a public-domain book posts its Gutenberg number',async t=>{
+  const calls=[]
+  mockNetwork(t,async(path,init)=>{calls.push([path,init?.body]);return Response.json({job_id:'j',state:'queued'})})
+  await api.openBook({provider:'gutendex',provider_id:'28054'})
+  await api.openJob('j')
+  assert.deepEqual(calls,[['/api/catalog/open','{"provider":"gutenberg","provider_id":28054}'],['/api/catalog/jobs/j',undefined]])
+})
+
+const {formatAnswer,highlightParts}=await loadSource('../src/ui/answerFormat.ts')
+test('answers replace source ids with numbered references and keep lists, bold and quotes',()=>{
+  const blocks=formatAnswer('Voici les liens :\n\n- **Polina** → belle-fille → **General** [b_ch08_p016]\n> « Exact words » [b_ch17_p015]\nFin [unknown_id].',['b_ch08_p016','b_ch17_p015'])
+  assert.deepEqual(blocks.map(b=>b.kind),['paragraph','bullet','quote','paragraph'])
+  assert.deepEqual(blocks[1].segments.filter(s=>s.kind!=='text'),[{kind:'bold',text:'Polina'},{kind:'bold',text:'General'},{kind:'cite',number:1}])
+  assert.deepEqual(blocks[2].segments.at(-1),{kind:'cite',number:2})
+  assert.equal(JSON.stringify(blocks[3]).includes('unknown_id'),false)
+})
+test('the verified quote is highlighted inside its passage',()=>{
+  assert.deepEqual(highlightParts('He said yes today.',[3,11]),['He ','said yes',' today.'])
+  assert.deepEqual(highlightParts('abc',null),['abc','',''])
+})

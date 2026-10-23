@@ -36,3 +36,6 @@ build/
 /web/node_modules/
 /web/dist/
 /tmp/pdfs/
+
+# Brainstorming mockups
+.superpowers/

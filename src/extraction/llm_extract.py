@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
-MODEL_NAME = os.getenv("OLLAMA_MODEL", "qwen3.5:4b-q4_K_M")
+MODEL_NAME = os.getenv("OLLAMA_MODEL", "qwen3.5:9b")
 
 MAX_MENTION_WORDS = 4
 MAX_CONTEXT_CHARS = 300

@@ -31,6 +31,9 @@ class RAGConfig:
     max_context_chars: int
     keep_alive: str
     rerank: bool = True
+    query_expansion: bool = True
+    llm_rerank: bool = True
+    audit_thinking: bool = False
 
     @classmethod
     def from_env(cls, model: str | None = None) -> "RAGConfig":
@@ -38,7 +41,7 @@ class RAGConfig:
         if analysis not in {"heuristic", "llm"}:
             analysis = "heuristic"
         return cls(
-            model=model or os.getenv("OLLAMA_MODEL", "qwen3.5:4b-q4_K_M"),
+            model=model or os.getenv("OLLAMA_MODEL", "qwen3.5:9b"),
             provider=os.getenv("LLM_PROVIDER", "ollama").strip().casefold() or "ollama",
             ollama_host=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434").strip(),
             ollama_timeout_seconds=_bounded_float("OLLAMA_TIMEOUT_SECONDS", 120.0, 1.0, 600.0),
@@ -51,10 +54,13 @@ class RAGConfig:
             min_lexical_coverage=_bounded_float("RAG_MIN_LEXICAL_COVERAGE", 0.30, 0.0, 1.0),
             query_analysis=analysis,
             context_window=_bounded_int("RAG_NUM_CTX", 8192, 2048, 32768),
-            max_output_tokens=_bounded_int("RAG_NUM_PREDICT", 700, 128, 2000),
+            max_output_tokens=_bounded_int("RAG_NUM_PREDICT", 1200, 128, 3000),
             max_context_chars=_bounded_int("RAG_MAX_CONTEXT_CHARS", 18000, 4000, 60000),
             keep_alive=os.getenv("OLLAMA_KEEP_ALIVE", "15m").strip() or "15m",
             rerank=os.getenv("RAG_RERANK", "true").casefold() in {"1", "true", "yes"},
+            query_expansion=os.getenv("RAG_QUERY_EXPANSION", "true").casefold() in {"1", "true", "yes"},
+            llm_rerank=os.getenv("RAG_LLM_RERANK", "true").casefold() in {"1", "true", "yes"},
+            audit_thinking=os.getenv("RAG_AUDIT_THINKING", "false").casefold() in {"1", "true", "yes"},
         )
 
 

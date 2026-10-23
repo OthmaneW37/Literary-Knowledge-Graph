@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "narrativelens",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["scripts/dev.py"],
+      "port": 5173
+    }
+  ]
+}

@@ -234,11 +234,14 @@ class QueryAnalyzer:
         "How", "Is", "Are", "Does", "Do", "Can", "Could", "Explain",
         "I", "The", "In", "Give", "List", "Please", "Est", "Le", "La", "Les",
         "Je", "Résume", "Resume", "Donne", "Décris", "Liste", "Peux",
+        # Capitalized sentence openers that are not characters.
+        "À", "A", "Dans", "Pour", "Sur", "Avec", "Que", "Quoi", "Ensuite", "Oublie", "Ignore",
+        "For", "On", "At", "From", "Then", "Write", "Print", "Compare", "Combien", "Où",
     }
 
     def __init__(
         self,
-        model: str = "qwen3.5:4b-q4_K_M",
+        model: str = "qwen3.5:9b",
         mode: str | None = None,
         keep_alive: str = "15m",
         provider: Any | None = None,

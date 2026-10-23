@@ -5,7 +5,7 @@
 ```powershell
 python -m pip install -r requirements.lock
 python -m pip install --no-deps -e .
-# .env : MCP_TRANSPORT=stdio ; VLM_MODEL=qwen3.5:4b-q4_K_M
+# .env : MCP_TRANSPORT=stdio ; VLM_MODEL=qwen3.5:9b
 python scripts/dev.py
 ```
 
